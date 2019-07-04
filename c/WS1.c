@@ -1,25 +1,28 @@
     #include <stdio.h>
     #include <math.h>
-    int Pow(int exponent);
+    float Pow(int exponent);
     int Flip(int number);
-    void Swap(int var1, int var2)
+    void Swap(int var1, int var2);
+    void TestPow(int exponent);
     
     int main()
     {
-    printf("%d", Flip(0320));
+    printf("%f", Pow(-2));
+    TestPow(-2);
     return 0;
     }
     
     
-    int Pow(int exponent)
+    float Pow(int exponent)
     {
         
-        int base = 10;
+        float base = 10;
         float result = 1;
         
         if(exponent < 0)
         {
-            base = 1 / base;
+            base = 1.0 / base;
+            exponent = -exponent;
         }
             
         for(int i = 0; i < exponent; i++)
@@ -61,18 +64,31 @@
     void TestPow(int exponent)
     {
         
-        if((double)pow(10, exponent) == Pow(exponent))
+        if((double)pow(10.0, exponent) == (double)Pow(exponent))
         {
-            printf("Great Success")
+            printf("Great Success!!");
         }
         
         else
         {
-            printf("Great Fail!!")
+            printf("Great Fail!!");
         }
         
     }
-            
+    
+    void TestFlip(int flop, int flip)
+    {
+        if(flip == Flip(flop))
+        {
+            printf("Great Success!!");
+        }
         
+        else
+        {
+            printf("Great Fail!!");
+        }
         
+        return;
+    }
+          
            
