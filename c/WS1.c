@@ -7,8 +7,6 @@
     
     int main()
     {
-    printf("%f", Pow(-2));
-    TestPow(-2);
     return 0;
     }
     
@@ -51,12 +49,12 @@
     }
         
     
-    void Swap(int var1, int var2)
+    void Swap(int *var1, int *var2)
     {
         
-        int tmp = var1;
-        var1 = var2;
-        var2 = tmp;
+        int *tmp = &var1;
+        *var1 = &var2;
+        *var2 = &tmp;
         return;
            
     }
