@@ -44,12 +44,7 @@ int My_strcmp(const char *string1, const char *string2)
         ++length;
     }
     
-    if(string1[length] == string2[length])
-    {
-        return 0;
-    }
-
-    return (string1[length] > string2[length])? 1 : -1;
+    return string1[length] - string2[length];
 }
 
 
