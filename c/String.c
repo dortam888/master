@@ -1,6 +1,6 @@
 #include <stdio.h> //tolower
 #include <string.h>
-#include <String.h>
+#include "String.h"
 
 
 int main()
@@ -30,12 +30,14 @@ char *My_strcpy(char *destination, const char *source) /* destination and source
     size_t i = 0;
     char *tmpadress = destination;
     
-    for (i = 0; i <= My_strlen(source); i++)
+    for (i = 0; i < My_strlen(source); i++)
     {
         *destination = *source;
         destination++;
         source++;
     }
+    
+    *destination = '\0';
     
     return tmpadress; 
 }
@@ -46,7 +48,7 @@ char *My_strncpy(char *destination, const char *source, size_t num); /* destinat
     size_t i = 0;
     char *tmpadress = destination;
     
-    while (i <= num || My_strlen(source) <= num)
+    while (i <= num || My_strlen(source) < num)
     {
         *destination = *source;
         destination++;
@@ -77,8 +79,9 @@ int My_strcmp(const char *str1, const char *str2)
 }
 
 
-int strcasecmp(const char *f1, const char *f2)
+int My_strcasecmp(const char *f1, const char *f2)
 {
+
     while (*f1 != 0 && *f2 != 0 && 
           (tolower(*f1) == tolower(*f2)))
     {
@@ -86,7 +89,31 @@ int strcasecmp(const char *f1, const char *f2)
         f2++;
     }
     
-    return *f1 - *f2;
+    return tolower(*f1) - tolower(*f2);
 }
 
+
+char *My_strchr(const char *str, int c)
+{
+
+    while(*str != '\0' && *str != c)
+    {
+        str++;
+    }
+    
+    return str;
+}
+
+char *My_strdup(const char *source)
+{
+    char *destination = malloc(sizeof(source));
+    
+    return My_strcpy(destination, source);
+}
+
+char *My_strcat(char *destination, const char *source)
+{
+    
+           
+    
 
