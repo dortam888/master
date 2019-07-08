@@ -27,10 +27,9 @@ size_t My_strlen(const char *str)
 char *My_strcpy(char *destination, const char *source) /* destination and source should not overlap */
 {
 
-    size_t i = 0;
     char *tmpadress = destination;
     
-    for (i = 0; i < My_strlen(source); i++)
+    while (*source != '\0')
     {
         *destination = *source;
         destination++;
@@ -45,10 +44,12 @@ char *My_strcpy(char *destination, const char *source) /* destination and source
 
 char *My_strncpy(char *destination, const char *source, size_t num); /* destination and source should not overlap */
 {
+    
+    size_t srclength = My_strlen(source);
     size_t i = 0;
     char *tmpadress = destination;
     
-    while (i <= num || My_strlen(source) < num)
+    while (i <= num || srclength < num)
     {
         *destination = *source;
         destination++;
@@ -113,6 +114,79 @@ char *My_strdup(const char *source)
 
 char *My_strcat(char *destination, const char *source)
 {
+    char *tmpadress = destination;
+    destination += My_strlen(destination);
+    
+    while (*source != '\0')
+    {
+        *destination = *source;
+        destination++;
+        source++;
+    }
+    
+    destination = '\0';
+    
+    return tmpadress;
+}
+
+char *My_strstr(const char *haystack, const char *needle)
+{
+    
+    while(*haystack != '\0')
+    {
+        char *start = haystack;
+        char *pattern = needle;
+    
+        while(*start != '\0' && *pattern != '\0' && *start == *pattern)
+        {
+            haystack++;
+            pattern++;
+        }
+        
+        if(*pattern == '\0')
+        {
+            return start;
+        }
+        
+        haystack = start + 1;
+    }
+    
+    return NULL;
+}
+
+size_t My_strspn(const char *str1, const char *str2)
+{
+    unsigned int max = 0;
+    
+    while(*str1 != '\0')
+    {
+        char *start = str1;
+        char *pattern = str2;
+        unsigned int i = 1;
+        
+        while(*start != '\0' && *pattern != '\0' && *start == *pattern)
+        {
+            haystack++;
+            pattern++;
+            i++;
+        }
+        
+        if(i > max)
+        {
+            max = i;
+        }
+        
+        str1 = start + 1;
+    }
+    
+    return max;
+}
+            
+    
+    
+    
+    
+         
     
            
     
