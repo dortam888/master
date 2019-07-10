@@ -71,7 +71,7 @@ void Test_My_strcmp()
            My_strcmp(str5,str6) == strcmp(str5,str6));
 }
 
-char *My_strcpy(char *destination, const char *source)  destination and source should not overlap 
+char *My_strcpy(char *destination, const char *source)  /*destination and source should not overlap */ 
 {
     size_t i = 0;
     char *tmpadress = destination;
@@ -91,14 +91,14 @@ char *My_strcpy(char *destination, const char *source)  destination and source s
 }
 
 
-char *My_strncpy(char *destination, const char *source, size_t num);  destination and source should not overlap 
+char *My_strncpy(char *destination, const char *source, size_t num) /* destination and source should not overlap */
 {
     size_t i = 0;
     char *tmpadress = destination;
     
     assert(destination != NULL && source != NULL);
     
-    while (i <= num && My_strlen(source) < num)
+    while (i <= num && source != '\0')
     {
         *destination = *source;
         destination++;
@@ -109,7 +109,7 @@ char *My_strncpy(char *destination, const char *source, size_t num);  destinatio
     for (; i < num; i++)
     {
         *destination = '\0';
-        destination ++;
+        destination++;
     }
                                                                                                                                                                                     
     return tmpadress; 
@@ -203,7 +203,10 @@ char *My_strstr(const char *haystack, const char *needle)
 char *My_strstr2(const char *haystack, const char *needle)
 {
 
-    assert(strlen(haystack) >= strlen(needle));
+    if(strlen(haystack) > strlen(needle))
+    {
+        return NULL;
+    }
     
     while (*haystack != '\0')
     {
