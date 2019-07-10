@@ -1,4 +1,5 @@
 /* This is a header for reimplementation of some of string.h functions */
+#include <stdio.h> /*size_t*/
 
 size_t My_strlen(const char *str);
 
