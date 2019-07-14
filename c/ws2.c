@@ -9,21 +9,19 @@ int CheckSeven(int number);
 void RmSpaces(char *str);
 char *StringAdd(char *str1, char *str2);
 void AddChars(char *str1, char *str2, char *destination, int *residual);
+char int2char(int number); /* turns int to char: 1 -> '1' */
+int char2int(char c); /* turns char to int: '1' -> 1 */
+
 
 int main()
 {
-    
-	char *str1 = "11111111";
-	char *str2 = "222222222";
-    char *dest = StringAdd(str1, str2);
-	printf("%s", dest);
+
     return 0;
 }
 
 
 int IsPalindrome(const char *str)
 {
-
     const char *beginning = str;
     const char *end = str + strlen(str) - 1;
     
@@ -40,7 +38,6 @@ int IsPalindrome(const char *str)
     }
     
     return 1;
-    
 }
 
 void SevenBoom(int from, int to)
@@ -63,6 +60,13 @@ void SevenBoom(int from, int to)
     }
 }
 
+void SwapPtr(int **ptr1, int **ptr2)
+{
+	int *temp = *ptr1;
+	
+	*ptr1 = * ptr2;
+	*ptr2 = temp;
+}
 int CheckSeven(int num)
 {
     while (0 != num)
@@ -74,7 +78,7 @@ int CheckSeven(int num)
         
         num /= 10;
     }
-    
+
     return 0;
 }
 
@@ -94,7 +98,7 @@ void RmSpaces(char *str)
 
 char *StringAdd(char *str1, char *str2)
 {
-	int result = 0;
+
     int residual = 0;
 	int str1_len = strlen(str1);
 	int str2_len = strlen(str2);
@@ -109,55 +113,27 @@ char *StringAdd(char *str1, char *str2)
    
     do
     {
-		if (strmin != strmin_end)
+		if (strmin <= strmin_end)
 		{
-		    result = (*strmax_end - 48) + (*strmin_end - 48) + residual; /* -48 to turn char to int */
-
-		    if (10 <= result)
-		    {
-		        result -= 10;
-				residual = 1;
-		    }
-			else
-			{
-				residual = 0;
-			}
-
-		    sprintf(dest_end, "%d", result);
-		    strmax_end--;
-		    strmin_end--;
-			dest_end--;
+            AddChars(strmax_end, strmin_end, dest_end, &residual);
+            
+            strmax_end--;
+            strmin_end--;
+		    dest_end--;
 		}
 
 		else
 		{
-		    result = (*strmax_end - 48) + residual; /* -48 to turn char to int */
+		    AddChars(strmax_end, "0", dest_end, &residual);
 
-		    if (10 <= result)
-		    {
-		        result -= 10;
-				residual = 1;
-		    }
-			else
-			{
-				residual = 0;
-			}
-
-		    sprintf(dest_end, "%d", result);
 		    strmax_end--;
 			dest_end--;
 		}
     }
 	while (strmax_end >= strmax);
 
-	if (residual == 0)
-	{				
-		*dest_end = '0'; /* patch of patches */
-	} 
-	else
-	{
-		sprintf(dest_end, "%d", 1);	
-	}		
+
+	*dest_end = residual ? 49 : 32; /* patch of patches puts 1 if there is residual or space if not*/	
 		
     return dest_start;
 }       
@@ -167,7 +143,7 @@ void AddChars(char *str1, char *str2, char *destination, int *residual)
 {		
 		int result = 0;
 
-        result = (*str1 - 48) + (*str2 - 48) + *residual; /* -48 to turn char to int */
+        result = char2int(*str1) + char2int(*str2) + *residual; 
 
         if (10 <= result)
         {
@@ -179,8 +155,27 @@ void AddChars(char *str1, char *str2, char *destination, int *residual)
 			*residual = 0;
 		}
 
-        sprintf(destination, "%d", result);
-        str1--;
-        str2--;
-		destination--;
+        *destination = int2char(result); 
+}
+
+
+char int2char(int number)
+{
+    return number + 48;
+}
+
+
+int char2int(char c)
+{
+    return c - 48;
+}
+
+void Test_Add_String()
+{
+	char *str1 = "1541";
+	char *str2 = "29391";
+    char *dest = StringAdd(str1, str2);
+	printf("first number is: %s\n", str1)
+	printf("second number is: %s\n", str2)
+	printf("result: %s\n", dest);
 }
