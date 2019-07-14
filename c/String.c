@@ -1,13 +1,28 @@
-#include <stdio.h> //tolower
+#include <stdio.h>
+#include <stdlib.h> /* malloc, free */
+#include <assert.h> /* assert */
 #include <string.h>
+#include <ctype.h> /* tolower */
 #include "String.h"
+
+void Test_My_strlen();
+void Test_My_strcmp();
+void Test_My_strcpy();
+void Test_My_strncpy();
+void Test_My_strcasecmp();
 
 
 int main()
 {
+    Test_My_strlen();
 
-printf("%d", My_strlen("abcdefg"));
-return 0;
+    Test_My_strcmp();
+
+    Test_My_strcpy();
+
+    Test_My_strncpy();
+    
+    return 0;
 }
 
 
@@ -15,21 +30,61 @@ size_t My_strlen(const char *str)
 {   
     const char *cpystr = str;
 
-    while (*cpystr != '\0')
+    assert(str != NULL);
+    
+    while ('\0' != *cpystr)
     {
-        str++;
+        cpystr++;
     }
     
     return (size_t)(cpystr - str);
 }
 
 
-char *My_strcpy(char *destination, const char *source) /* destination and source should not overlap */
+void Test_My_strlen()
+{
+    char *str1 = "a"; char *str2 = "abcdeFAYF"; char *str3 = "";
+    
+    assert(My_strlen(str1) == strlen(str1) &&
+           My_strlen(str2) == strlen(str2) &&
+           My_strlen(str3) == strlen(str3));
+}
+
+
+int My_strcmp(const char *str1, const char *str2)
 {
 
+    assert(str1 != NULL && str2 != NULL);    
+    
+    while ('\0' != *str1 && *str1 == *str2)
+    {
+        str1++;
+        str2++;
+    }
+    
+    return *str1 - *str2;
+}
+
+
+void Test_My_strcmp()
+{    
+    const char *str1 = "Hello"; const char *str2 = "HElLo";
+    const char *str3 = ""; const char *str4 = "hi";
+    const char *str5 = "hello"; const char *str6 = "hello";
+    
+    assert(My_strcmp(str1,str2) == strcmp(str1,str2) &&
+           My_strcmp(str3,str4) == strcmp(str3,str4) &&
+           My_strcmp(str5,str6) == strcmp(str5,str6));
+}
+
+
+char *My_strcpy(char *destination, const char *source)  
+{
     char *tmpadress = destination;
     
-    while (*source != '\0')
+    assert(destination != NULL && source != NULL); 
+    
+    while ('\0' != *source)
     {
         *destination = *source;
         destination++;
@@ -42,14 +97,26 @@ char *My_strcpy(char *destination, const char *source) /* destination and source
 }
 
 
-char *My_strncpy(char *destination, const char *source, size_t num); /* destination and source should not overlap */
+void Test_My_strcpy()
 {
+    const char *str1 = "strcpy"; const char *str2 = "";
+    char dest[7] = "aaaaaa";
     
-    size_t srclength = My_strlen(source);
+    assert(My_strcpy(dest, str1) == strcpy(dest, str1) &&
+           strcmp(My_strcpy(dest, str1), strcpy(dest, str1)) == 0 && 
+           strcmp(My_strcpy(dest, str2), strcpy(dest, str2)) == 0);
+}
+
+
+
+char *My_strncpy(char *destination, const char *source, size_t num) 
+{
     size_t i = 0;
     char *tmpadress = destination;
     
-    while (i <= num || srclength < num)
+    assert(destination != NULL && source != NULL);
+    
+    while (i < num && '\0' != source)
     {
         *destination = *source;
         destination++;
@@ -57,93 +124,106 @@ char *My_strncpy(char *destination, const char *source, size_t num); /* destinat
         i++;
     }
     
-    for (i; i < num; i++)
+    for (; i < num; i++)
     {
         *destination = '\0';
-        destination ++;
+        destination++;
     }
                                                                                                                                                                                     
     return tmpadress; 
 }   
 
-int My_strcmp(const char *str1, const char *str2)
+
+void Test_My_strncpy()
+{
+    const char *str1 = "strcpy"; const char *str2 = "st";
+    char dest[7] = "aaaaaa";
+    
+    assert(My_strncpy(dest, str1, 4) == strncpy(dest, str1, 4) &&
+           strcmp(My_strncpy(dest, str1, 4), strncpy(dest, str1, 4)) == 0 && 
+           strcmp(My_strncpy(dest, str2, 4), strncpy(dest, str2, 4)) == 0);
+}
+
+
+
+int My_strcasecmp(const char *str1, const char *str2)
 {
 
-    while (*str1 != 0 && *str2 != 0 && 
-          (*str1 == *str2))
+    while ('\0' != *str1 && (tolower(*str1) == tolower(*str2)))
     {
         str1++;
         str2++;
     }
     
-    return *str1 - *str2;
+    return tolower(*str1) - tolower(*str2);
 }
 
 
-int My_strcasecmp(const char *f1, const char *f2)
+void Test_My_strcasecmp()
 {
-
-    while (*f1 != 0 && *f2 != 0 && 
-          (tolower(*f1) == tolower(*f2)))
-    {
-        f1++;
-        f2++;
-    }
+    const char *str1 = "Hello"; const char *str2 = "HElLo";
+    const char *str3 = ""; const char *str4 = "hi";
+    const char *str5 = "hello"; const char *str6 = "hellor";
     
-    return tolower(*f1) - tolower(*f2);
+    assert(My_strcasecmp(str1,str2) == strcasecmp(str1,str2) &&
+           My_strcasecmp(str3,str4) == strcasecmp(str3,str4) &&
+           My_strcasecmp(str5,str6) == strcasecmp(str5,str6));
 }
 
 
 char *My_strchr(const char *str, int c)
-{
-
-    while(*str != '\0' && *str != c)
+{   
+    while ('\0' != *str)
     {
-        str++;
-    }
     
-    return str;
+        if (*str == c)
+        { 
+            return (char *)str;
+        }
+
+        str++;    
+    }  
+    
+    return NULL;
 }
+
 
 char *My_strdup(const char *source)
 {
-    char *destination = malloc(sizeof(source));
+    char *destination = (char *)malloc(My_strlen(source) + 1);
     
     return My_strcpy(destination, source);
 }
+
 
 char *My_strcat(char *destination, const char *source)
 {
     char *tmpadress = destination;
     destination += My_strlen(destination);
     
-    while (*source != '\0')
-    {
-        *destination = *source;
-        destination++;
-        source++;
-    }
-    
-    destination = '\0';
+    My_strcpy(destination, source);
     
     return tmpadress;
 }
 
+/*
 char *My_strstr(const char *haystack, const char *needle)
-{
+{    
+    const char *start = haystack;
+    const char *pattern = needle;
     
-    while(*haystack != '\0')
+    while (*haystack != '\0')
     {
-        char *start = haystack;
-        char *pattern = needle;
-    
-        while(*start != '\0' && *pattern != '\0' && *start == *pattern)
+        start = haystack;
+        pattern = needle;
+        
+        while (*start != '\0' && *pattern !='\0' && *start == *pattern)
         {
             haystack++;
             pattern++;
         }
         
-        if(*pattern == '\0')
+        if (*pattern == '\0')
         {
             return start;
         }
@@ -153,41 +233,51 @@ char *My_strstr(const char *haystack, const char *needle)
     
     return NULL;
 }
+*/
+
+char *My_strstr2(const char *haystack, const char *needle)
+{
+
+    if(strlen(needle) > strlen(haystack))
+    {
+        return NULL;
+    }
+    
+    while ('\0' != *haystack)
+    {
+        
+        if (strncmp(haystack, needle, strlen(needle)) == 0)
+        {
+            return (char *)haystack;
+        }
+        
+        haystack++;
+    }
+    
+    return NULL;
+}
+           
 
 size_t My_strspn(const char *str1, const char *str2)
 {
-    unsigned int max = 0;
+    size_t count = 0;    
     
-    while(*str1 != '\0')
-    {
-        char *start = str1;
-        char *pattern = str2;
-        unsigned int i = 1;
-        
-        while(*start != '\0' && *pattern != '\0' && *start == *pattern)
+    while ('\0' != *str1)
+    {       
+        while (strchr(str2, *str1) != NULL)
         {
-            haystack++;
-            pattern++;
-            i++;
+            count++;
+            str1++;
         }
         
-        if(i > max)
+        if (0 != count)
         {
-            max = i;
+            return count;
         }
         
-        str1 = start + 1;
+        str1++;        
     }
     
-    return max;
+    return count;
 }
-            
-    
-    
-    
-    
-         
-    
-           
-    
 
