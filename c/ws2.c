@@ -6,15 +6,18 @@
 int IsPalindrome(const char *str);
 void SevenBoom(int from, int to);
 int CheckSeven(int number);
+void SwapPtr(int **ptr1, int **ptr2);
 void RmSpaces(char *str);
 char *StringAdd(char *str1, char *str2);
 void AddChars(char *str1, char *str2, char *destination, int *residual);
 char int2char(int number); /* turns int to char: 1 -> '1' */
 int char2int(char c); /* turns char to int: '1' -> 1 */
+void Test_Add_String();
 
 
 int main()
 {
+	Test_Add_String();
 
     return 0;
 }
@@ -60,13 +63,7 @@ void SevenBoom(int from, int to)
     }
 }
 
-void SwapPtr(int **ptr1, int **ptr2)
-{
-	int *temp = *ptr1;
-	
-	*ptr1 = * ptr2;
-	*ptr2 = temp;
-}
+
 int CheckSeven(int num)
 {
     while (0 != num)
@@ -80,6 +77,15 @@ int CheckSeven(int num)
     }
 
     return 0;
+}
+
+
+void SwapPtr(int **ptr1, int **ptr2)
+{
+	int *temp = *ptr1;
+	
+	*ptr1 = * ptr2;
+	*ptr2 = temp;
 }
 
 /*        
