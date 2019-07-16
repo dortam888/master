@@ -116,7 +116,7 @@ int SoldierProblem(int num_of_soldiers)
 {
 	int soldier_initialization = 0;
 	int *soldiers = malloc(num_of_soldiers * sizeof(int)); 
-	int sword_position = 0;
+	int sword_index = 0;
 	int killed_soldier = 0;
 
 	assert(NULL != soldiers); /* also check that num_of_soldiers != 0 */
@@ -129,16 +129,16 @@ int SoldierProblem(int num_of_soldiers)
 	
     while (1)
     {
-        killed_soldier = FindNextLiveSoldier(soldiers, num_of_soldiers, sword_position);
+        killed_soldier = FindNextLiveSoldier(soldiers, num_of_soldiers, sword_index);
         
-        if (killed_soldier == sword_position)
+        if (killed_soldier == sword_index)
         {
     	    free(soldiers);	
-    		return sword_position + 1;
+    		return sword_index + 1; /* convert to position */
         }
         
         soldiers[killed_soldier] = Kill; 
-        sword_position = FindNextLiveSoldier(soldiers, num_of_soldiers, killed_soldier);
+        sword_index = FindNextLiveSoldier(soldiers, num_of_soldiers, killed_soldier);
     }
     
 }
