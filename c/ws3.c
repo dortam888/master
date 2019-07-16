@@ -39,19 +39,18 @@ int main(int argc, char *argv[], char **env)
 
 void Sizes()
 {
-	printf("\033[1;36m\nList of data types in C:\033[0m \n");
-	printf("short int: %ld bytes\n",sizeof(short int));
-	printf("unsigned short int: %lu bytes\n",sizeof(unsigned short int));
-	printf("unsigned int: %lu bytes\n",sizeof(unsigned int));
-	printf("int: %ld bytes\n",sizeof(int));
-	printf("long int: %ld bytes\n",sizeof(long int));
-	printf("unsigned long int: %lu bytes\n",sizeof(unsigned long int));
-	printf("long int: %ld bytes\n",sizeof(long int));
-	printf("signed char: %ld bytes\n",sizeof(signed char));
-	printf("unsigned char: %ld bytes\n",sizeof(unsigned char));
-	printf("float: %ld bytes\n",sizeof(float));
-	printf("double: %ld bytes\n",sizeof(double));
-	printf("long double: %ld bytes\n",sizeof(long double));
+	printf("short int: %ld bytes\n", sizeof(short int));
+	printf("unsigned short int: %lu bytes\n", sizeof(unsigned short int));
+	printf("unsigned int: %lu bytes\n", sizeof(unsigned int));
+	printf("int: %ld bytes\n", sizeof(int));
+	printf("long int: %ld bytes\n", sizeof(long int));
+	printf("unsigned long int: %lu bytes\n", sizeof(unsigned long int));
+	printf("long int: %ld bytes\n", sizeof(long int));
+	printf("signed char: %ld bytes\n", sizeof(signed char));
+	printf("unsigned char: %ld bytes\n", sizeof(unsigned char));
+	printf("float: %ld bytes\n", sizeof(float));
+	printf("double: %ld bytes\n", sizeof(double));
+	printf("long double: %ld bytes\n", sizeof(long double));
 	printf("\n");
 }
 
@@ -168,12 +167,12 @@ static int FindNextLiveSoldier(int *soldier, int num_of_soldiers, int current_in
 
 static void Test_SoldierProblem()
 {
-	int n1 = 100, n2 = 1, n3 = 2, n4 = 1000;
+	int n1 = 100, n2 = 1, n3 = 2, n4 = 16;
 
-	printf("The last soldier is: %d\n",SoldierProblem(n1));
-	printf("The last soldier is: %d\n",SoldierProblem(n2));
-	printf("The last soldier is: %d\n",SoldierProblem(n3));
-	printf("The last soldier is: %d\n",SoldierProblem(n4));
+	printf("The last soldier is: %d\n", SoldierProblem(n1));
+	printf("The last soldier is: %d\n", SoldierProblem(n2));
+	printf("The last soldier is: %d\n", SoldierProblem(n3));
+	printf("The last soldier is: %d\n", SoldierProblem(n4));
 }
 
 
