@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
-#define MAXCHAR 256
+#define Number_Of_Functions 256
+#define ESC 27
+#define A 97
+#define T 116
 
 void PrintTA_ifelse();
 void PrintTA_switch();
-static void Esc();
-static void A();
-static void T();
+static void ExitFunctionAndEnableTerminal();
+static void PressKey(int ch);
+static void Nothingness(int ch);
 void PrintTA_LUT();
 
 int main()
@@ -22,25 +26,23 @@ int main()
 
 void PrintTA_ifelse()
 {
-	char ch = 0;
+	int ch = 0;
 
 	while (1)
 	{
 		ch = getchar();
 		
-		if ('a' == ch)
+		if (A == ch)
 		{
-			printf("A pressed\n");
+			PressKey(ch);
 		}
-		else if ('t' == ch)
+		else if (T == ch)
 		{
-			printf("T pressed\n");
+			PressKey(ch);
 		}
-		else if (27 == ch)
+		else if (ESC == ch)
 		{
-			printf("Program execution stopped by ESC\n");
-			system("stty icanon echo");
-			exit(0);
+			ExitFunctionAndEnableTerminal(ch);
 		}
 	}			
 }
@@ -48,7 +50,7 @@ void PrintTA_ifelse()
 
 void PrintTA_switch()
 {
-	char ch = 0;
+	int ch = 0;
 	
 	while (1)
 	{
@@ -56,62 +58,61 @@ void PrintTA_switch()
 		
 		switch (ch)
 		{
-			case 'a':
-			printf("A pressed\n");
+			case A:
+			PressKey(ch);
 			break;
 			
-			case 't':
-			printf("T pressed\n");
+			case T:
+			PressKey(ch);
 			break;
 
-			case 27:
-			printf("Program execution stopped by ESC\n");
-			system("stty icanon echo");
-			exit(0);
+			case ESC:
+			ExitFunctionAndEnableTerminal(ch);
 			break;
 		}
 	}
 }			
 
 
-static void Esc()
+static void ExitFunctionAndEnableTerminal(int ch)
 {
+	(void)ch;
 	printf("Program execution stopped by ESC\n");
 	system("stty icanon echo");
 	exit(0);
 }
 
-static void A()
+static void PressKey(int ch)
 {
-	printf("A pressed\n");
+	printf("%c pressed\n", toupper(ch));
 }
 
-
-static void T()
+static void Nothingness(int ch)
 {
-	printf("T pressed\n");
+	(void)ch;
 }
+
 
 void PrintTA_LUT()
 {
 	int i = 0;
 	int ch = 0;
 	
-	void (*lookup[MAXCHAR])(void);
+	void (*functions_array[Number_Of_Functions])(int);
 
-	for (; i < MAXCHAR; i++)
+	for (; i < Number_Of_Functions; i++)
 	{
-		lookup[i] = NULL;
+		functions_array[i] = Nothingness;
 	}
 	
-	lookup[27] = &Esc;
-	lookup[97] = &A;
-	lookup[116] = &T;
+	functions_array[ESC] = ExitFunctionAndEnableTerminal;
+	functions_array[A] = PressKey;
+	functions_array[T] = PressKey;
 
 	while (1)
 	{
 		ch = getchar();
-		lookup[ch]();
+		functions_array[ch](ch);
 	}
 
 }
