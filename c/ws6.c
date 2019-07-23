@@ -2,6 +2,7 @@
 #include <assert.h> /* assert */
 
 #define NIBBLE1111 15
+#define LUTSIZE 16
 
 enum {False, True};
 
@@ -185,12 +186,12 @@ unsigned int ByteMirror(unsigned char number)
 
 unsigned int ByteMirrorLUT(unsigned char number)
 {
-	unsigned char bit_lut[16] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
+	unsigned char bit_lut[LUTSIZE] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
 	unsigned char mask = NIBBLE1111;
 	unsigned char firstmirror = number & mask;
 	unsigned char mirrored = (number >> 4) & mask;
 	
-	mirrored = bit_lut[mirrored]
+	mirrored = bit_lut[mirrored];
 	mirrored <<= 4;
 	mirrored |= bit_lut[firstmirror];
 		
@@ -231,9 +232,11 @@ static void TestCheckBitOrBitOn()
 {
 	assert(!CheckBitOrBitOn(8, 2, 6));
 	assert(CheckBitOrBitOn(9, 1, 3));
+	assert(CheckBitOrBitOn(9, 0, 3));
 	assert(CheckBitOrBitOn(10, 4, 3));
 	assert(CheckBitOrBitOn(33, 7, 5));
 	assert(!CheckBitOrBitOn(0, 0, 0));
+	assert(!CheckBitOrBitOn(1, 1, 1));
 } 
 
 
@@ -329,7 +332,7 @@ unsigned char CountSetBits(unsigned int num)
 
 unsigned char CountSetBitsLUT(unsigned int num)
 {
-	unsigned char bit_lut[16] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};	
+	unsigned char bit_lut[LUTSIZE] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};	
 	unsigned char mask = NIBBLE1111;
 	unsigned bits_on = 0;
 
