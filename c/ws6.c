@@ -1,35 +1,38 @@
 #include <stdio.h> /* printf */
 #include <assert.h> /* assert */
 
+#define BITS_IN_NIBBLE 4
+#define BITS_IN_BYTE 8
 #define NIBBLE1111 15
 #define LUTSIZE 16
 
 enum {False, True};
 
-double Pow2(unsigned int x, int y);
+double Pow2(unsigned int binary_number, int y);
 static void Pow2Test();
 
-unsigned int IsPower2(unsigned int x);
-unsigned int IsPower2Bit(unsigned int x);
+unsigned int IsPower2(unsigned int binary_number);
+unsigned int IsPower2Bit(unsigned int binary_number);
 static void IsPower2Test_A(unsigned int (*function)(unsigned int));
 static void IsPower2Test();
 
-unsigned int Add1(unsigned int x);
+unsigned int Add1(unsigned int binary_number);
 static void Add1BitTest();
 
-void PrintNumsWithBits(unsigned int *x, unsigned int length, unsigned char num_of_bits_req);
+void PrintNumsWithBits(unsigned int *binary_number, unsigned int length, unsigned char num_of_bits_req);
 static void TestPrintNumsWithBits();
 
-unsigned int ByteMirror(unsigned char number);
+unsigned char ByteMirror(unsigned char number);
 static void ByteMirrorTest();
+static void ByteMirrorTestDiagram(unsigned char (*function)(unsigned char));
 
-unsigned int CheckBitOn(unsigned int x, unsigned int pos1, unsigned int pos2);
+unsigned char CheckBitOn(unsigned char binary_number, unsigned char pos1, unsigned char pos2);
 static void TestCheckBitOn();
 
-unsigned int CheckBitOrBitOn(unsigned int x, unsigned int pos1, unsigned int pos2);
+unsigned char CheckBitOrBitOn(unsigned char binary_number, unsigned char pos1, unsigned char pos2);
 static void TestCheckBitOrBitOn();
 
-unsigned int SwapTwoBits(unsigned int x, unsigned int pos1, unsigned int pos2);
+unsigned char SwapTwoBits(unsigned char binary_number, unsigned char pos1, unsigned char pos2);
 static void TestSwapTwoBits();
 
 unsigned int ClosestNumberDivided16(unsigned int number);
@@ -91,22 +94,22 @@ static void Pow2Test()
 	assert(Pow2(32,-5) == 1);
 }
 
-unsigned int IsPower2(unsigned int x)
+unsigned int IsPower2(unsigned int binary_number)
 {
 	unsigned int i = 1;
 	
-	while(i < x)
+	while(i < binary_number)
 	{
 		i <<= 1;
 	}
 	
-	return (i == x) ? True : False;
+	return (i == binary_number) ? True : False;
 }
 
 
-unsigned int IsPower2Bit(unsigned int x)
+unsigned int IsPower2Bit(unsigned int binary_number)
 {
-	return x && (!(x & (x-1)));
+	return binary_number && (!(binary_number & (binary_number-1)));
 }
 
 
@@ -127,9 +130,9 @@ static void IsPower2Test()
 }
 
 
-unsigned int Add1(unsigned int x)
+unsigned int Add1(unsigned int binary_number)
 {
-	return -(~x);
+	return -(~binary_number);
 }
 
 
@@ -141,7 +144,7 @@ static void Add1BitTest()
 }
 
 
-void PrintNumsWithBits(unsigned int *x, unsigned int length, unsigned char num_of_bits_req)
+void PrintNumsWithBits(unsigned int *binary_number, unsigned int length, unsigned char num_of_bits_req)
 {
 	unsigned int i = 0;
 	unsigned int num_of_bits = 0;
@@ -150,14 +153,14 @@ void PrintNumsWithBits(unsigned int *x, unsigned int length, unsigned char num_o
 
 	for (; i < length; ++i)
 	{
-		num_of_bits = CountSetBitsLUT(*x);
+		num_of_bits = CountSetBitsLUT(*binary_number);
 		
 		if (num_of_bits == num_of_bits_req)
 		{
-			printf("%u\n", *x);
+			printf("%u\n", *binary_number);
 		}
 		
-		++x;
+		++binary_number;
 	}		
 }
 
@@ -169,47 +172,56 @@ static void TestPrintNumsWithBits()
 }
 
 
-unsigned int ByteMirror(unsigned char number)
+unsigned char ByteMirror(unsigned char number)
 {
 	unsigned char mirror_number = 0;
-
-	while(0 < number)
+	unsigned int i = 0;	
+	
+	for (i = 0; i < BITS_IN_BYTE; i++)
 	{
+		mirror_number <<= 1;		
 		mirror_number |= number & 1;
-		mirror_number <<= 1;
 		number >>= 1;
 	}
 
-	return mirror_number >> 1;
+	return mirror_number;
 }
 
 
-unsigned int ByteMirrorLUT(unsigned char number)
+unsigned char ByteMirrorLUT(unsigned char number)
 {
 	unsigned char bit_lut[LUTSIZE] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
 	unsigned char mask = NIBBLE1111;
 	unsigned char firstmirror = number & mask;
 	unsigned char mirrored = (number >> 4) & mask;
 	
-	mirrored = bit_lut[mirrored];
-	mirrored <<= 4;
-	mirrored |= bit_lut[firstmirror];
+	firstmirror = bit_lut[firstmirror];	
+	firstmirror <<= 4;
+	mirrored = firstmirror | bit_lut[mirrored];
 		
 	return mirrored;
 }
 
 
-static void ByteMirrorTest()
+static void ByteMirrorTestDiagram(unsigned char (*function)(unsigned char))
 {
-	assert(ByteMirror(9) == 9);
-	assert(ByteMirror(8) == 1);
-	assert(ByteMirror(10) == 5);
+	assert(function(128) == 1);
+	assert(function(1) == 128);
+	assert(function(8) == 16);
+	assert(function(177) == 141);
+	assert(function(0) == 0);
 }
 
 
-unsigned int CheckBitOn(unsigned int x, unsigned int bit_pos1, unsigned int bit_pos2)
+static void ByteMirrorTest()
 {
-	return ((x >> bit_pos1) & (x >> bit_pos2));
+	ByteMirrorTestDiagram(ByteMirror);
+	ByteMirrorTestDiagram(ByteMirrorLUT);
+}
+
+unsigned char CheckBitOn(unsigned char binary_number, unsigned char bit_pos1, unsigned char bit_pos2)
+{
+	return ((binary_number >> bit_pos1) & (binary_number >> bit_pos2));
 }
 
 static void TestCheckBitOn()
@@ -222,9 +234,9 @@ static void TestCheckBitOn()
 } 
 
 
-unsigned int CheckBitOrBitOn(unsigned int x, unsigned int bit_pos1, unsigned int bit_pos2)
+unsigned char CheckBitOrBitOn(unsigned char binary_number, unsigned char bit_pos1, unsigned char bit_pos2)
 {
-	return (((x >> bit_pos1) | (x >> bit_pos2)) & 1);
+	return (((binary_number >> bit_pos1) | (binary_number >> bit_pos2)) & 1);
 }
 
 
@@ -240,14 +252,19 @@ static void TestCheckBitOrBitOn()
 } 
 
 
-unsigned int SwapTwoBits(unsigned int x, unsigned int bit_pos1, unsigned int bit_pos2)
+unsigned char SwapTwoBits(unsigned char binary_number, unsigned char bit_pos1, unsigned char bit_pos2)
 {
-	unsigned int bit1 = (x >> bit_pos1) & 1;
-	unsigned int bit2 = (x >> bit_pos2) & 1;
+	unsigned int bit1 = (binary_number >> bit_pos1) & 1; /* Isolate bit in position 1 */
+	unsigned int bit2 = (binary_number >> bit_pos2) & 1; /* Isolate bit in position 2 */
 	
-	unsigned int xor = bit1 ^ bit2;
-	xor = (xor << bit_pos1) | (xor << bit_pos2);
-	return x^xor;
+	/* to sweep 2 bytes we can use (A^B)^A = B so for the bits we xor them and*/
+    /* move the result to the      replaced bit positions and then we xor it */
+	/* with the original number so every bit stays the same as it xor with 0 */
+    /* except the positioned whic will get (A^B)^A */
+ 
+	unsigned int xor_two_bits = bit1 ^ bit2; 
+	xor_two_bits = (xor_two_bits << bit_pos1) | (xor_two_bits << bit_pos2);
+	return binary_number^xor_two_bits;
 }
 
 
@@ -256,6 +273,7 @@ static void TestSwapTwoBits()
 	assert(SwapTwoBits(8, 3, 1) == 2);
 	assert(SwapTwoBits(8, 3, 2) == 4);
 	assert(SwapTwoBits(8, 5, 3) == 32);
+	assert(SwapTwoBits(9, 0, 3) == 9);
 	assert(SwapTwoBits(32, 3, 5) == 8);
 	assert(SwapTwoBits(77, 3, 3) == 77);
 } 
@@ -360,7 +378,7 @@ static void TestCount(unsigned char (function)(unsigned int))
 {
 	assert(function(0) == 0);
 	assert(function(1) == 1);
-	assert(function(2048) == 1);
+	assert(function(112365) == 12);
 	assert(function(15) == 4);
 	assert(function(31) == 5);
 	assert(function(30) == 4);
@@ -385,3 +403,6 @@ void PrintFloat(float num)
 	}
 }
 */
+
+
+
