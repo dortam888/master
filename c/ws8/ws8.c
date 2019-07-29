@@ -8,6 +8,7 @@
 #define NUM_OF_ELEMENTS 3
 #define int2char(num) num + 48
 #define LongestNameSize 50
+#define NUM_OF_CONTACTS 10
 #define Sizeof(var) (char *)(&var + 1) - (char *)&var
 
 
@@ -18,7 +19,7 @@ typedef enum function_status {Could_Not_Allocate_Memory = -1, OK = 0} function_s
 typedef struct data_members
 {
 	void *data;
-	function_status_t(*add)(int, struct data_members);
+	function_status_t(*add)(int, struct *data_members);
 	void(*print)(struct data_members);
 	void(*free)(struct data_members);
 } data_members_t;
@@ -47,10 +48,11 @@ static FILE *OpenFile(const char *file_name, char *access);
 void ContactList();
 
 
-int main()
+int main(int argc, char *argv[])
 {
 	StructOfFunctions();
-	ContactList();
+	ContactList(argv[1]);
+	(void)argc;
 	return 0;
 }
 
@@ -192,9 +194,10 @@ int StructOfFunctions()
 }
 
 
-void ContactList()
+void ContactList(char *file_name)
 {
-	contact_t members[10] = {{"Juan", "Travolt", 234522018, {6, 5, 1975}},
+	contact_t members[NUM_OF_CONTACTS] = 
+							 {{"Juan", "Travolt", 234522018, {6, 5, 1975}},
 							 {"Jonas", "Nuebuer", 254300087, {23, 1, 1985}},
 							 {"Larry", "Long",  198874322, {12, 12, 1986}},
 							 {"Chris", "Corny", 364721555, {31, 7, 1990}},
@@ -205,14 +208,13 @@ void ContactList()
 							 {"Kobe", "Tamarandi", 397461255, {8, 7, 2000}},
 							 {"Peter", "Gabe", 134687964, {13, 6, 1975}}};
 
-	contact_t reading_array[10];
-	char *file_name = "Contacts_List";
+	contact_t reading_array[NUM_OF_CONTACTS];
 	FILE *file = OpenFile(file_name, "w");
-	fwrite(members, sizeof(contact_t) * 10, 1, file);
+	fwrite(members, sizeof(contact_t) * NUM_OF_CONTACTS, 1, file);
 	fclose(file);
 
 	file = OpenFile(file_name, "r");
-	fread(reading_array, sizeof(contact_t) * 10, 1, file);
+	fread(reading_array, sizeof(contact_t) * NUM_OF_CONTACTS, 1, file);
 	fclose(file);
 }
 
@@ -220,13 +222,13 @@ void ContactList()
 static FILE *OpenFile(const char *file_name, char *access)
 {
     FILE *file = fopen(file_name, access);
- 
-    if (file == NULL) 
+
+    if (file == NULL)
     { 
         printf("Could not open file %s", file_name);
-		exit(0); 
-    } 
-    
+		exit(0);
+    }
+
     return file;
 }
 
