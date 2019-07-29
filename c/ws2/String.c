@@ -241,13 +241,7 @@ char *My_strstr(const char *haystack, const char *needle)
 */
 
 char *My_strstr2(const char *haystack, const char *needle)
-{
-
-    if(strlen(needle) > strlen(haystack))
-    {
-        return NULL;
-    }
-    
+{    
     while ('\0' != *haystack)
     {
         

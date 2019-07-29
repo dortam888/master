@@ -48,10 +48,11 @@ static enum return_type_t NextInChain(const char *file_name,
 #define MAXSTR 200
 
  
-int main()
+int main(int argc, char *argv[])
 {
-	Logger("foo.txt");
+	Logger(argv[1]);
 	return 0;
+	(void)argc;
 }
 
 
@@ -104,6 +105,8 @@ static enum return_type_t AppendOperation(const char *file_name,
 	FILE *log_file = OpenFile(file_name);
 	fprintf(log_file, "%s", string);
 	fclose(log_file);
+
+	operation++; /* to remove warning */
 	
 	return Print;
 }
@@ -208,7 +211,7 @@ static enum return_type_t PushUpLineOperation(const char *file_name,
 
 void Logger(const char *file_name)
 {
-	char string[MAXSTR];
+	char input[MAXSTR];
 	enum return_type_t action = ERROR;	
 	struct operation_t array_of_operation[] =
 									 {{"-count\n", strcmp, CountOperation},
@@ -217,11 +220,11 @@ void Logger(const char *file_name)
 									  {"<", PushUpKeyFind, PushUpLineOperation},
  									  {"", AlwaysTrue, AppendOperation}};
 
-	while (Exit != action)
+	while (action != Exit)
 	{
 		printf("Enter text to log file: ");
-		fgets(string, MAXSTR, stdin); 
-		action = array_of_operation[0].operation(file_name, string, 
+		fgets(input, MAXSTR, stdin); 
+		action = array_of_operation[0].operation(file_name, input, 
 												  array_of_operation);
 	}
 	

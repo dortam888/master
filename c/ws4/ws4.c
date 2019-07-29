@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h> /*printf*/
+#include <stdlib.h> /*system*/
 #include <ctype.h>
 
 #define Number_Of_Functions 256

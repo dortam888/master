@@ -181,7 +181,7 @@ void Test_Add_String()
 	char *str1 = "1541";
 	char *str2 = "29391";
     char *dest = StringAdd(str1, str2);
-	printf("first number is: %s\n", str1)
-	printf("second number is: %s\n", str2)
+	printf("first number is: %s\n", str1);
+	printf("second number is: %s\n", str2);
 	printf("result: %s\n", dest);
 }

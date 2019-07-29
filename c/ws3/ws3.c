@@ -4,6 +4,8 @@
 #include <string.h> /* strlen */
 #include <assert.h> /* assert */
 
+#define PrintTypes(type)
+
 char **CreateBuffer(char **env, int *number_of_strings);
 static void PrintBuffer(char **array, int array_length);
 static void FreeBuffer(char **array, int array_length);
@@ -12,12 +14,10 @@ static int FindNextLiveSoldier(int arr[], int num_of_soldiers, int start_index);
 static void Test_SoldierProblem();
 void Sizes();
 
-enum Status{ Kill = 0, Alive = 1};
+enum { Kill = 0, Alive = 1};
 
-
-int main(int argc, char *argv[], char **env)
-{		
-	
+void PrintBufferModule(char **env)
+{
 	int number_of_strings_in_env = 0;
 	char **buffer = NULL;
 
@@ -26,6 +26,12 @@ int main(int argc, char *argv[], char **env)
 	PrintBuffer(buffer, number_of_strings_in_env);
 	
 	FreeBuffer(buffer, number_of_strings_in_env);
+}
+
+
+int main(int argc, char *argv[], char **env)
+{		
+	PrintBufferModule(env);
 	
 	Test_SoldierProblem();
 
