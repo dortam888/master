@@ -19,7 +19,7 @@ typedef enum function_status {Could_Not_Allocate_Memory = -1, OK = 0} function_s
 typedef struct data_members
 {
 	void *data;
-	function_status_t(*add)(int, struct *data_members);
+	function_status_t(*add)(int, struct data_members *);
 	void(*print)(struct data_members);
 	void(*free)(struct data_members);
 } data_members_t;
@@ -57,16 +57,16 @@ int main(int argc, char *argv[])
 }
 
 
-function_status_t IntAddFunc(int num_to_add, data_members_t int_member)
+function_status_t IntAddFunc(int num_to_add, data_members_t *int_member)
 {
-	*(int *)int_member.data += num_to_add;
+	*(int *)int_member[0].data += num_to_add;
 	return OK;
 }
 
 
-function_status_t FloatAddFunc(int num_to_add, data_members_t float_member)
+function_status_t FloatAddFunc(int num_to_add, data_members_t *float_member)
 {
-	*(float *)float_member.data += num_to_add;
+	*(float *)float_member[0].data += num_to_add;
 	return OK;
 }
 
@@ -85,22 +85,22 @@ size_t NumberOfDigitsInNum(int num)
 }
 
 
-function_status_t StringAddFunc(int num_to_add, data_members_t string_member)
+function_status_t StringAddFunc(int num_to_add, data_members_t *string_member)
 {
 
 	size_t number_of_digits = NumberOfDigitsInNum(num_to_add);
-	size_t needed_length = strlen(string_member.data) + number_of_digits + 1;
+	size_t needed_length = strlen(string_member[0].data) + number_of_digits + 1;
 	
-	string_member.data = realloc(string_member.data, needed_length);
+	string_member[0].data = realloc(string_member[0].data, needed_length);
 	
-	if (NULL != string_member.data)
+	if (NULL == string_member[0].data)
 	{
 		return Could_Not_Allocate_Memory;
 	}
 
-	sprintf(string_member.data, "%s%d", (char *)string_member.data, num_to_add);
+	sprintf(string_member[0].data, "%s%d", (char *)string_member[0].data, num_to_add);
 	
-	return OK;	
+	return OK;
 }
 
 
@@ -175,7 +175,7 @@ int StructOfFunctions()
 {
 	int integer_number = 45;
 	float float_number = 84.4;
-	char string[] = "";
+	char string[] = "somestring";
 	int i = 0;
 	int num_to_add = 10;
 	data_members_t array_of_members[NUM_OF_ELEMENTS];
@@ -184,7 +184,7 @@ int StructOfFunctions()
 
 	for (i = 0; i < NUM_OF_ELEMENTS; ++i)
 	{
-		array_of_members[i].add(num_to_add, array_of_members[i]);
+		array_of_members[i].add(num_to_add, &array_of_members[i]);
 		array_of_members[i].print(array_of_members[i]);
 		array_of_members[i].free(array_of_members[i]);
 	}
