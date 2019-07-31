@@ -5,27 +5,35 @@
 #include <stddef.h> /* size_t ptrdiff_t*/
 
 #define WORDSIZE (sizeof(size_t))
-#define BITS_IN_BYTE (8)
+#define BITS_IN_BYTE 8
 #define NUMBER_OF_CHARS 256
+#define MAX(a,b) ((a) > (b))? ((a) : (b))
+#define MAX3(a,b,c) ((a) > (b))? (((a) > (c)? (a) : (c)) : ((b) > (c)? (b) : (c)))
+
 
 typedef enum Overlap {NO_OVERLAP, RIGHT_OVERLAP, LEFT_OVERLAP} overlap_t;
 
-void *My_memcpy_ByteByByte(void *dest, const void *src, size_t number_of_bits);
+static void *My_memcpy_ByteByByte(void *dest, const void *src, 
+								  size_t number_of_bits);
 void *My_memcpy(void *dest, const void *src, size_t number_of_bits);
-void Test_My_memcpy();
+static void Test_My_memcpy();
+static void Test_My_memset();
 int My_atoibase(const char *str, int base);
+char *My_itoabase(int number, int base, char *result);
 void ThreeArrays(char *str1, char *str2, char *str3);
+void CheckEndianess();
 
 
 int main()
 {
-	/*Test_My_memcpy();*/
-	ThreeArrays("abcde", "cdeft", "ftdyr");
+	Test_My_memcpy();
+	Test_My_memset();
 	return 0;
 }
 
 
-void *My_memcpy_ByteByByte(void *dest, const void *src, size_t number_of_bits)
+static void *My_memcpy_ByteByByte(void *dest, const void *src, 
+								  size_t number_of_bits)
 {
 	void *start_of_dest = dest;
 	size_t i = 0;
@@ -42,24 +50,26 @@ void *My_memcpy_ByteByByte(void *dest, const void *src, size_t number_of_bits)
 	return start_of_dest;
 }
 
+
+						
 void *My_memcpy(void *dest, const void *src, size_t number_of_bits)
 {
 	void *start_of_dest = dest;
-	size_t first_tail = 0;
+	char *dest_char_ptr = (char *)dest;
+	char *src_char_ptr = (char *)src;
 	size_t *dest_st_ptr = NULL;
 	size_t *src_st_ptr = NULL;
 
 	assert(NULL != dest && NULL != src);
 
-	first_tail = (size_t)src % WORDSIZE;
-	My_memcpy_ByteByByte(dest, src, first_tail);
-	
-	dest = (char *)dest + first_tail;
-	src = (const char *)src + first_tail;
-	number_of_bits -= first_tail;
+	while ((0 != (size_t)src % WORDSIZE) && (number_of_bits > 0))
+	{
+		*dest_char_ptr++ = *src_char_ptr++;
+		--number_of_bits;
+	}
 
-	dest_st_ptr = (size_t *)dest;
-	src_st_ptr = (size_t *)src;
+	dest_st_ptr = (size_t *)dest_char_ptr;
+	src_st_ptr = (size_t *)src_char_ptr;
 
 	while (number_of_bits >= WORDSIZE)
 	{
@@ -69,6 +79,7 @@ void *My_memcpy(void *dest, const void *src, size_t number_of_bits)
 
 	My_memcpy_ByteByByte(dest_st_ptr, src_st_ptr, number_of_bits);
 
+	
 	return start_of_dest;
 }
 
@@ -90,51 +101,52 @@ void *My_memset_ByteByByte(void *s, int c, size_t number_of_bits)
 }
 
 
-void *My_memset(void *s, int c, size_t number_of_bits)
+void *My_memset(void *str, int c, size_t number_of_bits)
 {
-	void *start_of_s = s;
-	size_t word_c = (size_t)c;
-	size_t *s_st_ptr = NULL;
+	void *start_of_str = str;
+	size_t word_c = c;
+	size_t *str_st_ptr = NULL;
 	size_t i = 0;
 
-	assert(NULL != s);
+	assert(NULL != str);
 
-	while (0 != (size_t)s % WORDSIZE && 0 != number_of_bits)
+	while (0 != (size_t)str % WORDSIZE && 0 < number_of_bits)
 	{
-		*(char *)s = c;
-		s = (char *)s + 1;
+		*(char *)str = c;
+		str = (char *)str + 1;
 		--number_of_bits;
 	}
 
 	for (i = 1; i < WORDSIZE; ++i)
 	{
-		word_c = (word_c << BITS_IN_BYTE) | (word_c & 0xFF);
+		word_c = (word_c << BITS_IN_BYTE) | c;
 	}
 
-	s_st_ptr = (size_t *)s;
+	str_st_ptr = (size_t *)str;
 
 	while (number_of_bits >= WORDSIZE)
 	{
-		*s_st_ptr++ = word_c;
+		*str_st_ptr++ = word_c;
 		number_of_bits -= WORDSIZE;
 	}
 
-	s = s_st_ptr;
+	str = str_st_ptr;
 
-	while (0 != number_of_bits)
+	while (0 < number_of_bits)
 	{
-		*(char *)s = c;
-		s = (char *)s + 1;
+		*(char *)str = c;
+		str = (char *)str + 1;
 		--number_of_bits;
 	}
 
-	return start_of_s;
+	return start_of_str;
 }
 
 
 static overlap_t CheckOverlap(const void *dest, const void *src, size_t n)
 {
-	if ((char *)dest - (char *)src > n || (char *)dest - (char *)src > n)
+	if ( ((char *)dest - (char *)src > (ptrdiff_t)n) || 
+		 (((char *)dest - (char *)src) < (-(ptrdiff_t)n)) )
 	{
 		return NO_OVERLAP;
 	}
@@ -166,11 +178,11 @@ void *My_memmove(void *dest, const void *src, size_t n)
 			break;
 
 		case RIGHT_OVERLAP:
-			My_memcpy_Backward(dest, src, n);
+			/*My_memcpy_Backward(dest, src, n);*/
 			break;
 
 		case LEFT_OVERLAP:
-			My_memcpy_Forward(dest, src, n);
+			/*My_memcpy_Forward(dest, src, n);*/
 			break;
 	}
 }
@@ -216,7 +228,7 @@ int My_atoibase(const char *str, int base)
 			break;
 		}
 
-		if (*str - '\0' < 10)
+		if (*str - '0' < 10)
 		{
 			result = result * base + *str - '0';
 		}
@@ -224,8 +236,7 @@ int My_atoibase(const char *str, int base)
 		{
 			if (*str - '0' - 6 > base || *str - '0' - 6 < '\0')
 			{
-				printf("invalid number in base %d\n", base);
-				exit(0);
+				break;
 			}
 			result = result * base + *str - '0' - 7;
 		}
@@ -235,12 +246,26 @@ int My_atoibase(const char *str, int base)
 	return result;
 }
 
+size_t NumberOfDigitsInNum(int num, int base)
+{
+	size_t number_of_digits = 0;
+	
+	while (0 != num)
+	{
+		++number_of_digits;
+		num /= base;
+	}
+	
+	return number_of_digits;
+}
+
 
 char *My_itoa10(int number)
 {
 	char *result = 0;
 	char *start_of_result = result;
-
+	size_t num_of_digits_in_number = NumberOfDigitsInNum(number, 10);
+	
 	if (number < 0)
 	{
 		*result = '-';
@@ -248,6 +273,10 @@ char *My_itoa10(int number)
 		++result;
 	}
 
+	result += num_of_digits_in_number;
+	*result = '\0';
+	--result;
+	
 	while (0 != number)
 	{
 		*result = number % 10 + '0';
@@ -255,16 +284,14 @@ char *My_itoa10(int number)
 		number /= 10;
 	}
 
-	result = '\0';
-
 	return start_of_result;
 }
 
 
-char *My_itoabase(int number, int base)
+char *My_itoabase(int number, int base, char *result)
 {
-	char *result = 0;
 	char *start_of_result = result;
+	size_t num_of_digits_in_number = NumberOfDigitsInNum(number, base);
 
 	if (number < 0)
 	{
@@ -272,15 +299,24 @@ char *My_itoabase(int number, int base)
 		number = -number;
 		++result;
 	}
+	
+	result += num_of_digits_in_number;
+	*result = '\0';
+	--result;
 
 	while (0 != number)
 	{
-		*result = number % base + '0';
-		++result;
+		if (number % base < 10)
+		{
+			*result = number % base + '0';
+		}
+		else
+		{
+			*result = number % base + '0' + 7;
+		}
+		--result;
 		number /= base;
 	}
-
-	result = '\0';
 
 	return start_of_result;
 }
@@ -324,12 +360,60 @@ void ThreeArrays(char *str1, char *str2, char *str3)
 }
 
 
-void Test_My_memcpy()
+void CheckEndianess()
 {
-	char dest[50];
+	int number = 1;
+	int *ptr_to_number = &number;
+	
+	if (1 == *ptr_to_number)
+	{
+		printf("system is little endian");
+	} 
+	else
+	{
+		printf("system is not little endian");
+	}
+}
+
+
+static void Test_My_memcpy()
+{
+	char dest[50] = {0};
+	char dest2[50] = {0};
 	const char *src = "more than more than";
+	const int arr[8] = {1, 2, 3, 4, 4, 3, 2, 1};
 
-	My_memcpy(dest, src, 18);
+	My_memcpy(dest, src, 10);
+	memcpy(dest2, src, 10);
+	
+	assert(strcmp(dest, dest2) == 0);
+	
+	My_memcpy(dest, src, 0);
+	memcpy(dest2, src, 0);
+	
+	assert(strcmp(dest, dest2) == 0);
 
-	printf("%s\n", dest);
+	My_memcpy(dest, arr, 3*sizeof(arr[0]));
+	memcpy(dest2, arr, 3*sizeof(arr[0]));
+	
+	assert(strcmp(dest, dest2) == 0);	
+}
+
+
+static void Test_My_memset()
+{
+	char dest[50] = {0};
+	char dest2[50] = {0};
+	int dest3[50] = {0};
+	int dest4[50] = {0};
+
+	My_memset(dest, 't', 3);
+	memset(dest2, 't', 3);
+	
+	assert(strcmp(dest, dest2) == 0);
+	
+	My_memset(dest3, 5, 20);
+	memset(dest4, 5, 20);
+	
+	assert(*dest3 == *dest4 && *dest3 + 19 == *dest4 + 19);	
 }
