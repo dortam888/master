@@ -9,6 +9,7 @@
 #define NUMBER_OF_CHARS 256
 #define MAX(a,b) ((a) > (b))? ((a) : (b))
 #define MAX3(a,b,c) ((a) > (b))? (((a) > (c)? (a) : (c)) : ((b) > (c)? (b) : (c)))
+#define CHECKENDIANESS ((short)"\x01" == (short)1)? printf("is little endian") : printf("is big endian")
 
 
 typedef enum Overlap {NO_OVERLAP, RIGHT_OVERLAP, LEFT_OVERLAP} overlap_t;
@@ -28,6 +29,7 @@ int main()
 {
 	Test_My_memcpy();
 	Test_My_memset();
+	CHECKENDIANESS;
 	return 0;
 }
 
@@ -160,31 +162,67 @@ static overlap_t CheckOverlap(const void *dest, const void *src, size_t n)
 	}
 }
 
-void *My_memmove(void *dest, const void *src, size_t n)
+
+static void *My_memcpy_Backward(void *dest, const void *src, size_t number_of_bits)
+{
+	ptrdiff_t overlap = (char *)dest -(char *)src;
+	size_t *dest_st_ptr = (size_t *)((char *)dest + number_of_bits);
+	size_t *src_st_ptr = (size_t *)((char *)src + number_of_bits);
+	char *dest_char_ptr = NULL;
+	char *src_char_ptr = NULL;
+
+	while (0 < (number_of_bits - overlap) / WORDSIZE)
+	{
+		*(dest_st_ptr - WORDSIZE) = *(src_st_ptr - WORDSIZE);
+		--dest_st_ptr;
+		--src_st_ptr;
+		number_of_bits -= WORDSIZE;
+	}
+
+	dest_char_ptr = (char *)dest_st_ptr;
+	src_char_ptr = (char *)src_st_ptr;
+
+	while ( 0 < (number_of_bits - overlap) % WORDSIZE)
+	{
+		*dest_char_ptr = *src_char_ptr;
+		--dest_char_ptr;
+		--src_char_ptr;
+		--number_of_bits;
+	}
+
+	memcpy(dest, src, number_of_bits);
+
+	return dest;
+}
+
+
+void *My_memmove(void *dest, const void *src, size_t number_of_bits)
 {
 	overlap_t overlap = NO_OVERLAP;
 
 	if (src == dest)
 	{
-		return;
+		return dest;
 	}
 
-	overlap = CheckOverlap(dest, src, n);
+	overlap = CheckOverlap(dest, src, number_of_bits);
 
 	switch(overlap)
 	{
 		case NO_OVERLAP:
-			memcpy(dest, src, n);
-			break;
+			 memcpy(dest, src, number_of_bits);
+			 break;
 
 		case RIGHT_OVERLAP:
-			/*My_memcpy_Backward(dest, src, n);*/
-			break;
+			 My_memcpy_Backward(dest, src, number_of_bits);
+			 break;
 
 		case LEFT_OVERLAP:
-			/*My_memcpy_Forward(dest, src, n);*/
-			break;
+			 memcpy(dest, src, number_of_bits);
+			 break;
 	}
+
+	return dest;
 }
 
 
@@ -328,7 +366,7 @@ void ThreeArrays(char *str1, char *str2, char *str3)
 	int char_array1[NUMBER_OF_CHARS];
 	int char_array2[NUMBER_OF_CHARS];
 	int char_array3[NUMBER_OF_CHARS];
-	memset(char_array1, 0, NUMBER_OF_CHARS * sizeof(char_array1[0]));	
+	memset(char_array1, 0, NUMBER_OF_CHARS * sizeof(char_array1[0]));
 	memset(char_array2, 0, NUMBER_OF_CHARS * sizeof(char_array2[0]));
 	memset(char_array3, 0, NUMBER_OF_CHARS * sizeof(char_array3[0]));
 
@@ -382,21 +420,25 @@ static void Test_My_memcpy()
 	char dest2[50] = {0};
 	const char *src = "more than more than";
 	const int arr[8] = {1, 2, 3, 4, 4, 3, 2, 1};
+	size_t i = 0;
 
-	My_memcpy(dest, src, 10);
-	memcpy(dest2, src, 10);
-	
-	assert(strcmp(dest, dest2) == 0);
-	
-	My_memcpy(dest, src, 0);
-	memcpy(dest2, src, 0);
-	
-	assert(strcmp(dest, dest2) == 0);
+	for (i = 0; i < WORDSIZE; ++i)
+	{
+		My_memcpy(dest, src + i, 10);
+		memcpy(dest2, src + i, 10);
 
-	My_memcpy(dest, arr, 3*sizeof(arr[0]));
-	memcpy(dest2, arr, 3*sizeof(arr[0]));
-	
-	assert(strcmp(dest, dest2) == 0);	
+		assert(strcmp(dest, dest2) == 0);
+
+		My_memcpy(dest, src, 0);
+		memcpy(dest2, src, 0);
+
+		assert(strcmp(dest, dest2) == 0);
+
+		My_memcpy(dest, arr + i, 3*sizeof(arr[0]));
+		memcpy(dest2, arr + i, 3*sizeof(arr[0]));
+
+		assert(strcmp(dest, dest2) == 0);
+	}
 }
 
 
@@ -415,5 +457,5 @@ static void Test_My_memset()
 	My_memset(dest3, 5, 20);
 	memset(dest4, 5, 20);
 	
-	assert(*dest3 == *dest4 && *dest3 + 19 == *dest4 + 19);	
+	assert(*dest3 == *dest4 && *dest3 + 19 == *dest4 + 19);
 }
