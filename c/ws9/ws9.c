@@ -23,6 +23,7 @@ static void *My_memcpy_ByteByByte(void *dest, const void *src,
 void *My_memcpy(void *dest, const void *src, size_t number_of_bits);
 static void Test_My_memcpy();
 static void Test_My_memset();
+static void Test_My_memmove();
 int My_atoibase(const char *str, int base);
 char *My_itoabase(int number, int base, char *result);
 void ThreeArrays(char *str1, char *str2, char *str3);
@@ -36,11 +37,11 @@ int main()
 {
 	Test_My_memcpy();
 	Test_My_memset();
-	Test_My_atoibase();
+	Test_My_memmove();
+	/*Test_My_atoibase();
 	Test_My_itoabase();
 	Test_ThreeArrays();
-	CheckEndianess();
-	/*CHECKENDIANESS;*/
+	CheckEndianess();*/
 	return 0;
 }
 
@@ -177,23 +178,23 @@ static overlap_t CheckOverlap(const void *dest, const void *src, size_t n)
 static void *My_memcpy_Backward(void *dest, const void *src, size_t number_of_bits)
 {
 	ptrdiff_t overlap = (char *)dest -(char *)src;
-	size_t *dest_st_ptr = (size_t *)((char *)dest + number_of_bits);
-	size_t *src_st_ptr = (size_t *)((char *)src + number_of_bits);
+	size_t *dest_st_ptr = (size_t *)((char *)dest + number_of_bits - 1);
+	size_t *src_st_ptr = (size_t *)((char *)src + number_of_bits - 1);
 	char *dest_char_ptr = NULL;
 	char *src_char_ptr = NULL;
 
-	while (0 < (number_of_bits - overlap) / WORDSIZE)
+	/*while (0 < (number_of_bits - overlap) / WORDSIZE)
 	{
-		*(dest_st_ptr - WORDSIZE) = *(src_st_ptr - WORDSIZE);
+		*(dest_st_ptr - 1) = *(src_st_ptr - 1);
 		--dest_st_ptr;
 		--src_st_ptr;
 		number_of_bits -= WORDSIZE;
-	}
+	}*/
 
 	dest_char_ptr = (char *)dest_st_ptr;
 	src_char_ptr = (char *)src_st_ptr;
 
-	while ( 0 < (number_of_bits - overlap) % WORDSIZE)
+	while ( 0 < number_of_bits)
 	{
 		*dest_char_ptr = *src_char_ptr;
 		--dest_char_ptr;
@@ -201,9 +202,34 @@ static void *My_memcpy_Backward(void *dest, const void *src, size_t number_of_bi
 		--number_of_bits;
 	}
 
-	memcpy(dest, src, number_of_bits);
-
 	return dest;
+}
+
+static void *My_memcpy_Forward(void *dest, const void *src, 
+								  size_t number_of_bits)
+{
+	void *start_of_dest = dest;
+	size_t i = 0;
+	ptrdiff_t overlap = (char *)src -(char *)dest;
+	
+	assert(NULL != dest && NULL != src);
+	
+	while (0 < (number_of_bits - overlap) / WORDSIZE)
+	{
+		*(size_t *)dest = *(const size_t *)src;
+		dest = (size_t *)dest + 1;
+		src = (const size_t *)src + 1;
+		number_of_bits -= WORDSIZE;
+	}
+	
+	for (i = 0; i < number_of_bits; ++i)
+	{
+		*(char *)dest = *(const char *)src;
+		dest = (char *)dest + 1;
+		src = (const char *)src + 1;
+	}
+
+	return start_of_dest;
 }
 
 
@@ -229,7 +255,7 @@ void *My_memmove(void *dest, const void *src, size_t number_of_bits)
 			 break;
 
 		case LEFT_OVERLAP:
-			 memcpy(dest, src, number_of_bits);
+			 My_memcpy_Forward(dest, src, number_of_bits);
 			 break;
 	}
 
@@ -490,6 +516,20 @@ static void Test_My_memset()
 	memset(dest4, 5, 20);
 	
 	assert(*dest3 == *dest4 && *dest3 + 19 == *dest4 + 19);
+}
+
+static void Test_My_memmove()
+{
+	char src[50] = "more than room there poor";
+	char src2[50] = "more than room there poor";
+	size_t i = 0;
+
+	for (i = 0; i < 12; ++i)
+	{
+		memmove(src + 5, src + i, 12);
+		My_memmove(src2 + 5, src2 + i, 12);
+		assert(strcmp(src, src2) == 0);
+	}	
 }
 
 void Test_ThreeArrays()
