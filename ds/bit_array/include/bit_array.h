@@ -1,5 +1,6 @@
 #ifndef ILRD_BIT_ARRAY_H
 #define ILRD_BIT_ARRAY_H
+#include <stdlib.h>
 
 /*############################################################################*/
 /* Owner: OL72 */
@@ -70,7 +71,7 @@ bit_array_t BitArrSetAll(bit_array_t bit_array);
   # Return Value:
 	Bit array with 0's.
 ##############################################################################*/
-bit_array_t BitArrResetALL(bit_array_t bit_array);
+bit_array_t BitArrResetAll(bit_array_t bit_array);
 
 /*#############################################################################
   # Description: 
@@ -189,7 +190,7 @@ size_t BitArrCountBitsOff(bit_array_t bit_array);
   # Return Value:
 	adress that contains string of the bit array
 ##############################################################################*/
-char *BitArrToString(bit_array_t bit_array_t, char *string)
+char *BitArrToString(bit_array_t bit_array_t, char *string);
 
 #endif /* ILRD_BIT_ARRAY_H */
 
