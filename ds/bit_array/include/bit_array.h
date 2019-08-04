@@ -190,7 +190,7 @@ size_t BitArrCountBitsOff(bit_array_t bit_array);
   # Return Value:
 	adress that contains string of the bit array
 ##############################################################################*/
-char *BitArrToString(bit_array_t bit_array_t, char *string);
+char *BitArrToString(bit_array_t bit_array, char *string);
 
 #endif /* ILRD_BIT_ARRAY_H */
 
