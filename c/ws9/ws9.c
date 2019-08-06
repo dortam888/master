@@ -38,10 +38,17 @@ int main()
 	Test_My_memcpy();
 	Test_My_memset();
 	Test_My_memmove();
+<<<<<<< HEAD
 	Test_My_atoibase();
 	Test_My_itoabase();
 	Test_ThreeArrays();
 	CheckEndianess();
+=======
+	/*Test_My_atoibase();
+	Test_My_itoabase();
+	Test_ThreeArrays();
+	CheckEndianess();*/
+>>>>>>> b4c919bd816033961f97a1bdb643106b17bf1034
 	return 0;
 }
 
