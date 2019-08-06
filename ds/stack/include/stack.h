@@ -23,7 +23,7 @@ typedef struct stack stack_t;
 	in case of success returns a pointer to the stack itself,
 	in case of failure returns NULL
 ##############################################################################*/
-stack_t* StackCreate(stack_t *stack, size_t max_capacity, size_t size_of_element);
+stack_t* StackCreate(size_t max_capacity, size_t size_of_element);
 
 
 /*#############################################################################
@@ -72,7 +72,7 @@ int StackPop(stack_t *stack);
   # Return Value:
 	The element in the last place
 ##############################################################################*/
-void *StackPeek(stack_t *stack);
+void* StackPeek(const stack_t *stack);
 
 
 /*#############################################################################
@@ -83,7 +83,7 @@ void *StackPeek(stack_t *stack);
   # Return Value:
 	how many data elements are in the stack
 ##############################################################################*/
-size_t StackSize(stack_t *stack);
+size_t StackSize(const stack_t *stack);
 
 
 /*#############################################################################
@@ -94,6 +94,6 @@ size_t StackSize(stack_t *stack);
   # Return Value:
 	1 if there are no elements in the stack 0 otherwise
 ##############################################################################*/
-int StackIsEmpty(stack_t *stack);
+int StackIsEmpty(const stack_t *stack);
 
 #endif /* ILRD_STACK_H */

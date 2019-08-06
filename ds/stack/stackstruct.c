@@ -1,4 +1,4 @@
-struct stack_t
+struct stack
 {
 	void *base;
 	void *current;
