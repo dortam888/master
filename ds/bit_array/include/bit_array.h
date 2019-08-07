@@ -2,6 +2,7 @@
 #define ILRD_BIT_ARRAY_H
 #include <stdlib.h>
 
+
 /*############################################################################*/
 /* Owner: OL72 */
 /* Reviewer: OL72*/
@@ -93,6 +94,17 @@ bit_array_t BitArrFlipBit(bit_array_t bit_array);
 ##############################################################################*/
 bit_array_t BitArrMirror(bit_array_t bit_array);
 
+
+/*#############################################################################
+  # Description: 
+	gets an array of bits and mirror all it's bits
+  # Parameters:
+	bit array
+  # Return Value:
+	Mirrored Bit array #10110011# -> #11001101#
+##############################################################################*/
+bit_array_t BitArrMirrorLUT(bit_array_t bit_array);
+
 /*#############################################################################
   # Description: 
 	get an array of bits and rotate it's bits left specified number of times
@@ -137,7 +149,7 @@ int BitArrIsBitOn(bit_array_t bit_array, size_t index);
 	1 or 0
 	If Index is bigger than available bits in bit array - undefined behavior
 ##############################################################################*/
-int BitArrIsBitsOff(bit_array_t bit_array, size_t index);
+int BitArrIsBitOff(bit_array_t bit_array, size_t index);
 
 /*#############################################################################
   # Description: 
@@ -169,6 +181,18 @@ int BitArrAreAllBitsOff(bit_array_t bit_array);
 	number of bits that are 1
 ##############################################################################*/
 size_t BitArrCountBitsOn(bit_array_t bit_array);
+
+
+/*#############################################################################
+  # Description: 
+	gets an array of bits and counts all the bits that are 1.
+  # Parameters:
+	bit array
+  # Return Value:
+	number of bits that are 1
+##############################################################################*/
+size_t BitArrCountBitsOnLUT(bit_array_t bit_array);
+
 
 /*#############################################################################
   # Description: 
