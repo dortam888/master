@@ -17,11 +17,12 @@ typedef struct stack stack_t;
 	gets a pointer of stack_t type, the number of elements that the stack should
 	hold (max_capacity) and the size of each of the data elements in the stack
   # Parameters:
-	max_capacity: the maximum memory (Bytes) that the stack should hold
+	max_capacity: the maximum elements that the stack should hold
 	size_of_element: the size of single data element that the stack should hold
   # Return Value:
 	in case of success returns a pointer to the stack itself,
 	in case of failure returns NULL
+	if max_capacity or size_of_element is 0 undefined behavior
 ##############################################################################*/
 stack_t* StackCreate(size_t max_capacity, size_t size_of_element);
 
@@ -71,6 +72,7 @@ int StackPop(stack_t *stack);
 	stack - the pointer to the stack of the element we want
   # Return Value:
 	The element in the last place
+	If stack is empty returns NULL
 ##############################################################################*/
 void* StackPeek(const stack_t *stack);
 
