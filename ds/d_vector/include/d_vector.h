@@ -34,7 +34,7 @@ void DVectorDestroy(d_vector_t *d_vector);
   # Return Value:
 	number of elements in dynamic vector
 ##############################################################################*/
-size_t DVectorSize(const vector_t *d_vector);
+size_t DVectorSize(const d_vector_t *d_vector);
 
 
 /*#############################################################################
@@ -45,7 +45,7 @@ size_t DVectorSize(const vector_t *d_vector);
   # Return Value:
 	1 if there are no elements in the dynamic vector 0 otherwise
 ##############################################################################*/
-int DVectorIsEmpty(const vector_t *d_vector);
+int DVectorIsEmpty(const d_vector_t *d_vector);
 
 /*#############################################################################
   # Description: 
@@ -56,7 +56,7 @@ int DVectorIsEmpty(const vector_t *d_vector);
   # Return Value:
 	returns 0 in case of success, and other integer value in case of failure
 ##############################################################################*/
-int DVectorPushBack(vector_t *d_vector, const void *data);
+int DVectorPushBack(d_vector_t *d_vector, const void *data);
 
 /*#############################################################################
   # Description: 
@@ -66,7 +66,7 @@ int DVectorPushBack(vector_t *d_vector, const void *data);
   # Return Value:
 	returns 0 in case of success, and other integer value in case of failure
 ##############################################################################*/
-int DVectorPopBack(vector_t *d_vector);
+int DVectorPopBack(d_vector_t *d_vector);
 
 /*#############################################################################
   # Description: 
@@ -76,8 +76,9 @@ int DVectorPopBack(vector_t *d_vector);
 	d_vector - pointer to the dynamic vector
   # Return Value:
 	address of the requested element
+	returns NULL for invalid index
 ##############################################################################*/
-void *DVectorGetItemAddress(const vector_t *d_vector, size_t index);
+void *DVectorGetItemAddress(const d_vector_t *d_vector, size_t index);
 
 /*#############################################################################
   # Description: 
@@ -87,7 +88,7 @@ void *DVectorGetItemAddress(const vector_t *d_vector, size_t index);
   # Return Value:
 	size of dynamic vector
 ##############################################################################*/
-size_t DVectorCapacity(const vector_t *d_vector);
+size_t DVectorCapacity(const d_vector_t *d_vector);
 
 /*#############################################################################
   # Description: 
@@ -102,7 +103,7 @@ size_t DVectorCapacity(const vector_t *d_vector);
 	dynamic vector size is not changed
 	returns -1 if allocation didn't succeded
 ##############################################################################*/
-int DVectorReserve(vector_t *d_vector, size_t number_of_elements);
+int DVectorReserve(d_vector_t *d_vector, size_t number_of_elements);
 
 #endif /* ILRD_VECTOR_H */
 
