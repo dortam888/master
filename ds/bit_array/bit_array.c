@@ -1,10 +1,7 @@
 #include "bit_array.h"
 #define NUMBER_OF_BIT_POSSIBILITIES_IN_NIBBLE 16
-#define BITS_IN_NIBBLE 4
+#define BITS_IN_NIBBLE __CHAR_BIT__ / 2
 #define BITS_IN_WORD (sizeof(size_t) * __CHAR_BIT__)
-#define BINARY_BASE 2
-
-enum {FALSE, TRUE};
 
 bit_array_t BitArrSetOn(bit_array_t bit_array, size_t index)
 {
@@ -26,12 +23,13 @@ bit_array_t BitArrSet(bit_array_t bit_array, size_t index, bit_status_t status)
 {
 	switch (status)
 	{
-	case ON:
-			bit_array = BitArrSetOn(bit_array, index);	
-			break;
-	case OFF:
-			bit_array = BitArrSetOff(bit_array, index);	
-			break;
+		case ON:
+				bit_array = BitArrSetOn(bit_array, index);
+				break;
+
+		case OFF:
+				bit_array = BitArrSetOff(bit_array, index);	
+				break;
 	}
 
 	return bit_array;
@@ -119,24 +117,24 @@ int BitArrIsBitOn(bit_array_t bit_array, size_t index)
 {
 	size_t mask = 1LU;
 
-	return (((bit_array >> index) & mask) == ON) ? TRUE : FALSE;
+	return (((bit_array >> index) & mask) == ON);
 }
 
 int BitArrIsBitOff(bit_array_t bit_array, size_t index)
 {
 	size_t mask = 1LU; 
 
-	return (((bit_array >> index) & mask) == OFF) ? TRUE : FALSE;
+	return (((bit_array >> index) & mask) == OFF);
 }
 
 int BitArrAreAllBitsOn(bit_array_t bit_array)
 {
-	return (bit_array == ~(0x0LU)) ? TRUE : FALSE;
+	return (bit_array == ~(0x0LU));
 }
 
 int BitArrAreAllBitsOff(bit_array_t bit_array)
 {
-	return (bit_array == 0x0LU) ? TRUE : FALSE;
+	return (bit_array == 0x0LU);
 }
 
 size_t BitArrCountBitsOn(bit_array_t bit_array)
@@ -192,6 +190,7 @@ char *BitArrToString(bit_array_t bit_array, char *string)
 {
 	char *start_of_string = string;
 	size_t i = 0;
+	size_t mask = 1LU;
 
 	assert(NULL != string);
 
@@ -201,9 +200,9 @@ char *BitArrToString(bit_array_t bit_array, char *string)
 
 	for (i = 0; i < BITS_IN_WORD; ++i)
 	{
-		*string = bit_array % BINARY_BASE + '0';
+		*string = (bit_array & mask) + '0';
+		bit_array >>= 1;
 		--string;
-		bit_array /= BINARY_BASE;
 	}
 
 	return start_of_string;
