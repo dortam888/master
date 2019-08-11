@@ -43,13 +43,14 @@ size_t CBuffCapacity(const c_buff_t *c_buff)
 
 size_t CBuffFreeSpace(const c_buff_t *c_buff)
 {
-	return c_buff -> write_to_read;
+	return CBuffCapacity(c_buff) - c_buff -> write_to_read;
 }
 
 ssize_t CBuffRead(c_buff_t *c_buff, void *buffer, size_t number_of_bytes)
 {
 	int return_value = 0;
-	size_t number_of_bytes_to_cpy = MIN(number_of_bytes, CBuffFreeSpace(c_buff));
+	size_t number_of_bytes_to_cpy = MIN(number_of_bytes, 
+										c_buff -> write_to_read);
 
 	if (0 == number_of_bytes_to_cpy)
 	{
@@ -84,7 +85,7 @@ ssize_t CBuffRead(c_buff_t *c_buff, void *buffer, size_t number_of_bytes)
 ssize_t CBuffWrite(c_buff_t *c_buff, void *data ,size_t number_of_bytes)
 {
 	size_t number_of_bytes_to_write = MIN(number_of_bytes, 
-		   CBuffCapacity(c_buff) - c_buff -> write_to_read);
+										  CBuffFreeSpace(c_buff));
 	void *write_ptr = NULL;
 
 	if ((char *)c_buff -> read + c_buff -> write_to_read <= (char *)c_buff -> end)
