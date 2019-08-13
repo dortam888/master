@@ -18,7 +18,7 @@ struct d_vector
 {
 	void *start;
 	void *end;
-	void *current; /*FIXME current what?*/
+	void *current;
 	size_t size_of_element;
 };
 
@@ -27,13 +27,13 @@ static int DVectorResize(d_vector_t *d_vector, size_t number_of_elements)
 {
 	int function_status = OK;
 	void *new_vector_start = NULL;
-	ptrdiff_t current_to_start = (char *)d_vector -> current -
-								 (char *)d_vector -> start;
+	ptrdiff_t current_to_start = (char *)d_vector->current -
+								 (char *)d_vector->start;
 
 	assert(NULL != d_vector);
 
-	new_vector_start = realloc(d_vector -> start, number_of_elements * 
-												  d_vector -> size_of_element);
+	new_vector_start = realloc(d_vector->start, number_of_elements * 
+												d_vector->size_of_element);
 
 	if (NULL == new_vector_start)
 	{
@@ -41,10 +41,10 @@ static int DVectorResize(d_vector_t *d_vector, size_t number_of_elements)
 	}
 	else
 	{
-		d_vector -> start = new_vector_start;
-		d_vector -> current = (char *)d_vector -> start + current_to_start;
-		d_vector -> end = (char *)d_vector -> start + number_of_elements *
-												    d_vector -> size_of_element;
+		d_vector->start = new_vector_start;
+		d_vector->current = (char *)d_vector->start + current_to_start;
+		d_vector->end = (char *)d_vector->start + number_of_elements *
+												  d_vector->size_of_element;
 	}
 
 	return function_status;
@@ -58,13 +58,13 @@ d_vector_t *DVectorCreate(size_t size_of_element, size_t capacity)
 
 	if (NULL != d_vector)
 	{
-		d_vector -> start = malloc(vector_memory_bytes);
+		d_vector->start = malloc(vector_memory_bytes);
 
-		if (NULL != d_vector -> start)
+		if (NULL != d_vector->start)
 		{
-			d_vector -> current = d_vector -> start;
-			d_vector -> end = (char *)d_vector -> start + vector_memory_bytes;
-			d_vector -> size_of_element = size_of_element;
+			d_vector->current = d_vector->start;
+			d_vector->end = (char *)d_vector->start + vector_memory_bytes;
+			d_vector->size_of_element = size_of_element;
 		}
 		else
 		{
@@ -79,10 +79,10 @@ d_vector_t *DVectorCreate(size_t size_of_element, size_t capacity)
 
 void DVectorDestroy(d_vector_t *d_vector)
 {
-	free(d_vector -> start);
-	d_vector -> start = NULL;
-	d_vector -> current = NULL;
-	d_vector -> end = NULL;
+	free(d_vector->start);
+	d_vector->start = NULL;
+	d_vector->current = NULL;
+	d_vector->end = NULL;
 
 	free(d_vector);
 }
@@ -92,8 +92,8 @@ size_t DVectorSize(const d_vector_t *d_vector)
 {
 	assert(NULL != d_vector);
 
-	return ((size_t)d_vector -> current - (size_t)d_vector -> start) / 
-													d_vector -> size_of_element;
+	return ((size_t)d_vector->current - (size_t)d_vector->start) / 
+												d_vector->size_of_element;
 }
 
 
@@ -101,7 +101,7 @@ int DVectorIsEmpty(const d_vector_t *d_vector)
 {
 	assert(NULL != d_vector);
 
-	return (d_vector -> current == d_vector -> start);
+	return (d_vector->current == d_vector->start);
 }
 
 
@@ -120,9 +120,9 @@ int DVectorPushBack(d_vector_t *d_vector, const void *data)
 
 	if (OK == function_status)
 	{
-		memcpy(d_vector -> current, data, d_vector -> size_of_element);
-		d_vector -> current = (char *)d_vector -> current + 
-													d_vector -> size_of_element;
+		memcpy(d_vector->current, data, d_vector->size_of_element);
+		d_vector->current = (char *)d_vector->current + 
+									d_vector->size_of_element;
 	}
 
 	return function_status;
@@ -140,13 +140,14 @@ int DVectorPopBack(d_vector_t *d_vector)
 	{
 		function_status = VECTOR_ISEMPTY;
 	}
-	else
+
+	if (OK == function_status)
 	{
-		d_vector -> current = (char *)d_vector -> current - 
-													d_vector -> size_of_element;
+		d_vector->current = (char *)d_vector->current - 
+									d_vector->size_of_element;
 
 		if (capacity_of_d_vector >= DVectorSize(d_vector) * SHRINK_FACTOR &&
-										 capacity_of_d_vector >= SHRINK_FACTOR)
+									capacity_of_d_vector >= SHRINK_FACTOR)
 		{
 			function_status = DVectorResize(d_vector, capacity_of_d_vector / 														  SHRINK_FACTOR);
 		}
@@ -161,7 +162,7 @@ void *DVectorGetItemAddress(const d_vector_t *d_vector, size_t index)
 	assert(NULL != d_vector);
 
 	return (index < DVectorSize(d_vector)) ? 
-		   (char *)d_vector -> start + index * d_vector -> size_of_element : 				NULL;
+		   (char *)d_vector->start + index * d_vector->size_of_element : NULL;
 }
 
 
@@ -169,8 +170,8 @@ size_t DVectorCapacity(const d_vector_t *d_vector)
 {
 	assert(NULL != d_vector);
 
-	return ((size_t)d_vector -> end - (size_t)d_vector -> start) / 
-													d_vector -> size_of_element;
+	return ((size_t)d_vector->end - (size_t)d_vector->start) / 
+											d_vector->size_of_element;
 }
 
 

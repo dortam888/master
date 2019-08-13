@@ -145,11 +145,13 @@ void TestOverflowStack()
 	if (status == 0)
 	{
 		FAIL(Push);
+		++flag;
 	}
 
 	if (StackSize(stack) != 3)
 	{
 		FAIL(Push);
+		++flag;
 	}
 
 	StackDestroy(stack);
