@@ -1,3 +1,9 @@
+/*******************************************************************************
+**** Author: Dor Tambour
+**** Last Update: 15/08/2019
+**** Reviewer : Daniel
+*******************************************************************************/
+
 #include <stdlib.h> /* malloc free */
 #include <string.h> /* memcpy */
 #include <assert.h> /* assert */
