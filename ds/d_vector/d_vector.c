@@ -1,7 +1,10 @@
 /*******************************************************************************
 **** Author: Dor Tambour
 **** Last Update: 15/08/2019
-**** Reviewer : Daniel
+**** Reviewer: Daniel
+**** Description: This file contains the implementations of functions
+				  for the data structure dynamic vector.
+				  Look at d_vector.h for more information about the functions.
 *******************************************************************************/
 
 #include <stdlib.h> /* malloc free */
@@ -10,8 +13,8 @@
 
 #include "d_vector.h" /* d_vector_t */
 
-#define GROWTH_FACTOR (2)
-#define SHRINK_FACTOR (4)
+static const size_t GROWTH_FACTOR = 2;
+static const size_t SHRINK_FACTOR = 4;
 
 enum function_status 
 {
@@ -21,18 +24,28 @@ enum function_status
 
 struct d_vector
 {
-	void *start; /* pointer to start of the vector */
-	void *end; /* pointer to end of the vector */
-	void *current; /* pointer to current position in vector */
+	char *start; /* pointer to start of the vector */
+	char *end; /* pointer to end of the vector */
+	char *current; /* pointer to right after last element in vector */
 	size_t size_of_element;
 };
 
+/* Vector parameters initialization function */
+static void DVectorInit(d_vector_t *d_vector, void *update_start, 
+						size_t update_current, size_t update_capacity)
+{
+	d_vector->start = update_start;
+	d_vector->current = d_vector->start + update_current;
+	d_vector->end = d_vector->start + update_capacity;
+}
+
+/* Vector resizing function for growth and shrink actions */
 static int DVectorResize(d_vector_t *d_vector, size_t number_of_elements)
 {
 	int function_status = SUCCESS;
-	void *new_vector_start = NULL;
-	ptrdiff_t current_to_start = (char *)d_vector->current -
-								 (char *)d_vector->start;
+	char *new_vector_start = NULL;
+	ptrdiff_t current_to_start = d_vector->current -
+								 d_vector->start;
 	size_t new_vector_capacity = number_of_elements * d_vector->size_of_element;
 
 	assert(NULL != d_vector);
@@ -43,9 +56,8 @@ static int DVectorResize(d_vector_t *d_vector, size_t number_of_elements)
 		return FAILED_TO_ALLOCATE_MEMORY;
 	}
 
-	d_vector->start = new_vector_start;
-	d_vector->current = (char *)d_vector->start + current_to_start;
-	d_vector->end = (char *)d_vector->start + new_vector_capacity;
+	DVectorInit(d_vector, new_vector_start, 
+				current_to_start, new_vector_capacity);
 
 	return function_status;
 }
@@ -54,7 +66,7 @@ d_vector_t *DVectorCreate(size_t size_of_element, size_t capacity)
 {
 	size_t vector_memory_bytes = capacity * size_of_element;
 
-	d_vector_t *d_vector = malloc(sizeof(d_vector_t));
+	register d_vector_t *d_vector = malloc(sizeof(d_vector_t));
 	if (NULL != d_vector)
 	{
 		return NULL;
@@ -67,9 +79,8 @@ d_vector_t *DVectorCreate(size_t size_of_element, size_t capacity)
 		d_vector = NULL;
 	}
 
-	d_vector->current = d_vector->start;
-	d_vector->end = (char *)d_vector->start + vector_memory_bytes;
 	d_vector->size_of_element = size_of_element;
+	DVectorInit(d_vector, d_vector->start, 0, vector_memory_bytes);
 
 	return d_vector;
 }
@@ -101,7 +112,7 @@ int DVectorIsEmpty(const d_vector_t *d_vector)
 	return (d_vector->current == d_vector->start);
 }
 
-static int IsDVectorFull(d_vector_t *d_vector)
+static int IsDVectorFull(const d_vector_t *d_vector)
 {
 	return (DVectorCapacity(d_vector) == DVectorSize(d_vector));
 }
@@ -124,22 +135,22 @@ int DVectorPushBack(d_vector_t *d_vector, const void *data)
 	}
 
 	memcpy(d_vector->current, data, d_vector->size_of_element);
-	d_vector->current = (char *)d_vector->current + d_vector->size_of_element;
+	d_vector->current = d_vector->current + d_vector->size_of_element;
 
 	return SUCCESS;
 }
 
-static int IsNumberOfElementInDVectorSmall(d_vector_t *d_vector)
+static int IsNumberOfElementInDVectorSmall(const d_vector_t *d_vector)
 {
 	return (DVectorCapacity(d_vector) >= DVectorSize(d_vector) * SHRINK_FACTOR);
 }
 
-static int IsDVectorCapacityLargerThanShrinkFactor(d_vector_t *d_vector)
+static int IsDVectorCapacityLargerThanShrinkFactor(const d_vector_t *d_vector)
 {
 	return (DVectorCapacity(d_vector) >= SHRINK_FACTOR);
 }
 
-static int IsDVectorNeedShrink(d_vector_t *d_vector)
+static int IsDVectorNeedShrink(const d_vector_t *d_vector)
 {
 	return (IsNumberOfElementInDVectorSmall(d_vector) 
 			&&
@@ -153,7 +164,7 @@ int DVectorPopBack(d_vector_t *d_vector)
 	assert(NULL != d_vector);
 	assert(!DVectorIsEmpty(d_vector));
 
-	d_vector->current = (char *)d_vector->current - d_vector->size_of_element;
+	d_vector->current = d_vector->current - d_vector->size_of_element;
 
 	if (IsDVectorNeedShrink(d_vector))
 	{
@@ -167,12 +178,17 @@ int DVectorPopBack(d_vector_t *d_vector)
 	return SUCCESS;
 }
 
+static int IsIndexLegal(const d_vector_t *d_vector, size_t index)
+{
+	return (index < DVectorSize(d_vector)); /* if index is smaller than number of elements in vector */
+}
+
 void *DVectorGetItemAddress(const d_vector_t *d_vector, size_t index)
 {
 	assert(NULL != d_vector);
-	assert(index < DVectorSize(d_vector));
+	assert(IsIndexLegal(d_vector, index));
 
-	return (char *)d_vector->start + index * d_vector->size_of_element;
+	return d_vector->start + index * d_vector->size_of_element;
 }
 
 size_t DVectorCapacity(const d_vector_t *d_vector)
