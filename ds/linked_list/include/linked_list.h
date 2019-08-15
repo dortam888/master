@@ -1,7 +1,7 @@
 #ifndef ILRD_LINKED_LIST_H
 #define ILRD_LINKED_LIST_H
-#include <stddef.h> /* size_t */
 
+#include <stddef.h> /* size_t */
 
 
 /*############################################################################*/
@@ -32,7 +32,6 @@ slist_node_t *SlistCreateNode(void *data, slist_node_t *next_node);
   # Description:
 	adds new node before current node. CAUSES POINTER INVALIDATION	
   # Parameters:
-	head - pointer to first node of linked list
 	current node - node to add before
 	new node - node to add 
 	head 0 
@@ -66,7 +65,7 @@ void SlistFreeAll(slist_node_t *head);
 
 /*############################################################################
   # Description:
-	removes node from linked list. CAUSES POINTER INVALIDATION	
+	removes node from linked list. CAUSES POINTER INVALIDATION
   # Parameters:
 	current_node - node to remove
   # Return Value:
@@ -131,7 +130,7 @@ int SlistForEach(slist_node_t *head, action_func_t action_func,
   # Return Value:
 	poitnter to address of new head
 ############################################################################*/
-slist_node_t *SlistFlip(const slist_node_t *head);
+slist_node_t *SlistFlip(slist_node_t *head);
 
 /*############################################################################
   # Description:
