@@ -1,5 +1,6 @@
-#include "stack.h"
-#include <stdio.h>
+#include <stdio.h> /*printf*/
+
+#include "stack.h" /*stack_t*/
 
 #define PASS(function) printf("\033[0;32m%s\033[0m\n", #function)
 #define FAIL(function) printf("\033[0;31m%s\033[0m\n", #function)
@@ -9,7 +10,7 @@ void TestFlowEmptyStack()
 {
 	stack_t *stack = StackCreate(5,4);
 	size_t stack_size = 0;
-	int flag = 0;
+	int error_counter = 0;
 
 	stack_size = StackSize(stack);
 
@@ -17,34 +18,19 @@ void TestFlowEmptyStack()
 	if (stack_size != 0)
 	{
 		FAIL(Size);
-		++flag;
+		++error_counter;
 	}
 
 	/* check that the stack is empty before any action */
 	if (!StackIsEmpty(stack))
 	{
 		FAIL(IsEmpty);
-		++flag;
-	}
-
-	StackPop(stack);
-
-	/* check that it is still empty if we pop*/
-	if (!StackIsEmpty(stack))
-	{
-		FAIL(StackPop);
-		++flag;
-	}
-
-	if (StackPeek(stack) != NULL)
-	{
-		FAIL(Peek);
-		++flag;
+		++error_counter;
 	}
 
 	StackDestroy(stack);
 
-	if (0 == flag)
+	if (0 == error_counter)
 	{
 		PASS(EmptyStackActions);
 	}
@@ -54,7 +40,7 @@ void TestFlowStack()
 {
 	stack_t *stack = StackCreate(3,4);
 	size_t stack_size = 0;
-	int flag = 0;
+	int error_counter = 0;
 	int a = 77;
 
 	StackPush(stack, &a);
@@ -65,21 +51,21 @@ void TestFlowStack()
 	if (stack_size != 1)
 	{
 		FAIL(Size);
-		++flag;
+		++error_counter;
 	}
 
 	/* check that the stack is not empty after push */
 	if (StackIsEmpty(stack))
 	{
 		FAIL(IsEmpty);
-		++flag;
+		++error_counter;
 	}
 
 	/* check that the element in the stack is the right one */
 	if (*(int *)StackPeek(stack) != a)
 	{
 		FAIL(Peek);
-		++flag;
+		++error_counter;
 	}
 
 	StackPop(stack);
@@ -88,12 +74,12 @@ void TestFlowStack()
 	if (!StackIsEmpty(stack))
 	{
 		FAIL(StackPop);
-		++flag;
+		++error_counter;
 	}
 
 	StackDestroy(stack);
 
-	if (0 == flag)
+	if (0 == error_counter)
 	{
 		PASS(StackActions);
 	}
@@ -104,7 +90,7 @@ void TestOverflowStack()
 	stack_t *stack = StackCreate(3,4);
 	size_t stack_size = 0;
 	int status = 0;
-	int flag = 0;
+	int error_counter = 0;
 	int a = 77;
 	char b[4] = "abc";
 	short c[2] = {1, 2};
@@ -120,43 +106,26 @@ void TestOverflowStack()
 	{
 		printf("%lu", stack_size);
 		FAIL(Size);
-		++flag;
+		++error_counter;
 	}
 
 	/* check that the stack is not empty after push */
 	if (StackIsEmpty(stack))
 	{
 		FAIL(IsEmpty);
-		++flag;
+		++error_counter;
 	}
 
 	/* check that the element in the stack is the right one */
 	if (*(int *)StackPeek(stack) != *(int *)c)
 	{
 		FAIL(Peek);
-		++flag;
-	}
-
-	/* Check that it doesn't let me to push when in overflow*/
-	
-	status = StackPush(stack, &a);
-
-	/* check that status is not 0*/
-	if (status == 0)
-	{
-		FAIL(Push);
-		++flag;
-	}
-
-	if (StackSize(stack) != 3)
-	{
-		FAIL(Push);
-		++flag;
+		++error_counter;
 	}
 
 	StackDestroy(stack);
 
-	if (0 == flag)
+	if (0 == error_counter)
 	{
 		PASS(StackOverflowActions);
 	}

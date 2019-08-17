@@ -62,13 +62,14 @@ void StackDestroy(stack_t *stack)
 
 static int IsStackFull(const stack_t *stack)
 {
-	return ((size_t)(stack->end) - (size_t)(stack->current) >= 
+	return ((size_t)(stack->end) - (size_t)(stack->current) < 
 													   stack->size_of_element);
 }
 
 int StackPush(stack_t *stack, void *data) 
 {
-	assert(stack != NULL && data != NULL);
+	assert(NULL != stack);
+	assert(NULL != data);
 	assert(!IsStackFull(stack));
 
 	memcpy(stack->current, data, stack->size_of_element);

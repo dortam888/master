@@ -137,7 +137,7 @@ static void TestRemoveAndRemoveAfter()
 
 	if (0 == error_count)
 	{
-		PASS("count works");
+		PASS("Remove and RemoveAfter work");
 	}
 }
 
@@ -173,7 +173,7 @@ static int divide(void *arr, void *arr2)
 {
 	if (0 != *(int *)arr2)
 	{
-		return 1
+		return 1;
 	}
 	else
 	{
@@ -183,9 +183,42 @@ static int divide(void *arr, void *arr2)
 	return 0;
 }
 
-static void TestForEach()
+static void TestIntersection()
 {
+	char *data = "dor tokea node";
+	int dor = 77;
+	size_t kiki = 90;
+	size_t error_count = 0;
+	
+	slist_node_t *node = SlistCreateNode(data, NULL);
+	slist_node_t *node2 = SlistCreateNode(&dor, node);
+	slist_node_t *node3 = SlistCreateNode(data, NULL);
+	slist_node_t *node4 = SlistCreateNode(&dor, node3);
+	slist_node_t *node5 = SlistCreateNode(data, node4);
+	slist_node_t *node6 = SlistCreateNode(&kiki, node4);
+	
+	if (NULL != SlistFindIntersection(node2, node5))
+	{
+		FAIL("didn't return NULL if no intersection found");
+		++error_count;
+	}
+	
+	if (node2 != SlistFindIntersection(node2, node2))
+	{
+		FAIL("didn't return head on same list");
+		++error_count;
+	}
+	
+	if (node4 != SlistFindIntersection(node5, node6))
+	{
+		FAIL("didn't return correct intersection point");
+		++error_count;
+	}
 
+	if (0 == error_count)
+	{
+		PASS("find intersection works");
+	}
 }
 
 int main()
@@ -194,5 +227,6 @@ int main()
 	TestInsertAndInsertAfter();
 	TestRemoveAndRemoveAfter();
 	TestCount();
+	TestIntersection();
 	return 0;
 }
