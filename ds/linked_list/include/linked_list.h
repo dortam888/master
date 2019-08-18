@@ -25,6 +25,7 @@ typedef struct node
 	data - pointer to data requested to be stored
   # Return Value:
 	pointer to new node
+	return NULL if fails
 ############################################################################*/
 slist_node_t *SlistCreateNode(void *data, slist_node_t *next_node);
 

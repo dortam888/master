@@ -1,6 +1,6 @@
 /*******************************************************************************
 **** Author: Dor Tambour
-**** Last Update: 17/08/2019
+**** Last Update: 18/08/2019
 **** Reviewer: Daniel
 **** Description: This file contains the implementations of functions
 				  for the data structure singly linked list.
@@ -13,7 +13,7 @@
 
 #include "linked_list.h" /* slist_node_t */
 
-enum {FOUND, NOT_FOUND};
+enum is_data_found {DATA_FOUND, DATA_NOT_FOUND};
 enum loop_indicator {LOOP_NOT_FOUND, LOOP_FOUND};
 
 slist_node_t *SlistCreateNode(void *data, slist_node_t *next_node)
@@ -32,23 +32,9 @@ slist_node_t *SlistCreateNode(void *data, slist_node_t *next_node)
 
 static void SwapPointers(void **ptr1, void **ptr2)
 {
-	void *tmp_ptr1 = *ptr1;
+	void *ptr1_cpy = *ptr1;
 	*ptr1 = *ptr2;
-	*ptr2 = tmp_ptr1;
-}
-
-slist_node_t *SlistInsertNode(slist_node_t *current_node,
-														 slist_node_t *new_node)
-{
-	assert(NULL != current_node);
-	assert(NULL != new_node);
-
-	/*pointer invalidation. new_node next will be current next but their data will be swapped*/
-	new_node->next_node = current_node->next_node;
-	current_node->next_node = new_node;
-	SwapPointers(&current_node->data, &new_node->data);
-
-	return current_node; /*current_node data became new_node data*/
+	*ptr2 = ptr1_cpy;
 }
 
 slist_node_t *SlistInsertAfterNode(slist_node_t *current_node,
@@ -63,30 +49,28 @@ slist_node_t *SlistInsertAfterNode(slist_node_t *current_node,
 	return new_node;
 }
 
+slist_node_t *SlistInsertNode(slist_node_t *current_node,
+														 slist_node_t *new_node)
+{
+	assert(NULL != current_node);
+	assert(NULL != new_node);
+
+	/*pointer invalidation. new_node next will be current next but their data will be swapped*/
+	SlistInsertAfterNode(current_node, new_node);
+	SwapPointers(&current_node->data, &new_node->data);
+
+	return current_node; /*current_node data became new_node data*/
+}
+
 void SlistFreeAll(slist_node_t *head)
 {
 	if (NULL != head)
 	{
-		slist_node_t *tmp = head->next_node;
+		slist_node_t *next_node_of_current = head->next_node;
 		free(head);
 		head = NULL;
-		SlistFreeAll(tmp);
+		SlistFreeAll(next_node_of_current);
 	}
-}
-
-slist_node_t *SlistRemove(slist_node_t *current_node)
-{
-	slist_node_t *removed_node = NULL;
-
-	assert(NULL != current_node);
-
-	/*pointer invalidation. the removed node will be the next node but the data will be swapped*/
-	removed_node = current_node->next_node;
-	SwapPointers(&current_node->data, &removed_node->data); /* swap datas */
-	current_node->next_node = removed_node->next_node;
-	removed_node->next_node = NULL;
-
-	return removed_node;
 }
 
 slist_node_t *SlistRemoveAfter(slist_node_t *current_node)
@@ -96,8 +80,22 @@ slist_node_t *SlistRemoveAfter(slist_node_t *current_node)
 	assert(NULL != current_node);
 
 	removed_node = current_node->next_node;
-	current_node->next_node = current_node->next_node->next_node;
+	current_node->next_node = removed_node->next_node;
 	removed_node->next_node = NULL;
+
+	return removed_node;
+}
+
+slist_node_t *SlistRemove(slist_node_t *current_node)
+{
+	slist_node_t *removed_node = NULL;
+
+	assert(NULL != current_node);
+
+	/*pointer invalidation. the removed node will be the next node but datas 
+	  will be swapped*/
+	removed_node = SlistRemoveAfter(current_node);
+	SwapPointers(&current_node->data, &removed_node->data); /* swap datas */
 
 	return removed_node;
 }
@@ -118,16 +116,15 @@ size_t SlistCount(const slist_node_t *head)
 slist_node_t *SlistFind(const slist_node_t *head, const void *data, 
 												  match_func_t match_func)
 {
-	int is_data_in_linked_list = NOT_FOUND;
 	const slist_node_t *current_node = head;
 
 	assert(NULL != match_func);
 
 	while (NULL != current_node)
 	{
-		is_data_in_linked_list = match_func(data, current_node->data);
+		int is_data_in_linked_list = match_func(data, current_node->data);
 
-		if (FOUND == is_data_in_linked_list)
+		if (DATA_FOUND == is_data_in_linked_list)
 		{
 			return (slist_node_t *)current_node;
 		}
@@ -154,6 +151,7 @@ int SlistForEach(slist_node_t *head, action_func_t action_func,
 
 	return action_func_returned_status;
 }
+
 
 slist_node_t *SlistFlip(slist_node_t *head)
 {
