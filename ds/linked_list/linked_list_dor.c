@@ -37,20 +37,6 @@ static void SwapPointers(void **ptr1, void **ptr2)
 	*ptr2 = ptr1_cpy;
 }
 
-slist_node_t *SlistInsertNode(slist_node_t *current_node,
-														 slist_node_t *new_node)
-{
-	assert(NULL != current_node);
-	assert(NULL != new_node);
-
-	/*pointer invalidation. new_node next will be current next but their data will be swapped*/
-	new_node->next_node = current_node->next_node;/*FIXME kefel code*/
-	current_node->next_node = new_node;/*FIXME kefel code*/
-	SwapPointers(&current_node->data, &new_node->data);
-
-	return current_node; /*current_node data became new_node data*/
-}
-
 slist_node_t *SlistInsertAfterNode(slist_node_t *current_node,
 														 slist_node_t *new_node)
 {
@@ -61,6 +47,19 @@ slist_node_t *SlistInsertAfterNode(slist_node_t *current_node,
 	current_node->next_node = new_node;
 
 	return new_node;
+}
+
+slist_node_t *SlistInsertNode(slist_node_t *current_node,
+														 slist_node_t *new_node)
+{
+	assert(NULL != current_node);
+	assert(NULL != new_node);
+
+	/*pointer invalidation. new_node next will be current next but their data will be swapped*/
+	SlistInsertAfterNode(current_node, new_node);
+	SwapPointers(&current_node->data, &new_node->data);
+
+	return current_node; /*current_node data became new_node data*/
 }
 
 void SlistFreeAll(slist_node_t *head)
@@ -74,21 +73,6 @@ void SlistFreeAll(slist_node_t *head)
 	}
 }
 
-slist_node_t *SlistRemove(slist_node_t *current_node)
-{
-	slist_node_t *removed_node = NULL;
-
-	assert(NULL != current_node);
-
-	/*pointer invalidation. the removed node will be the next node but the data will be swapped*/
-	removed_node = current_node->next_node; /*FIXME kefel code*/
-	SwapPointers(&current_node->data, &removed_node->data); /* swap datas */
-	current_node->next_node = removed_node->next_node;/*FIXME kefel code*/
-	removed_node->next_node = NULL;/*FIXME kefel code*/
-
-	return removed_node;
-}
-
 slist_node_t *SlistRemoveAfter(slist_node_t *current_node)
 {
 	slist_node_t *removed_node = NULL;
@@ -98,6 +82,19 @@ slist_node_t *SlistRemoveAfter(slist_node_t *current_node)
 	removed_node = current_node->next_node;
 	current_node->next_node = removed_node->next_node;
 	removed_node->next_node = NULL;
+
+	return removed_node;
+}
+
+slist_node_t *SlistRemove(slist_node_t *current_node)
+{
+	slist_node_t *removed_node = NULL;
+
+	assert(NULL != current_node);
+
+	/*pointer invalidation. the removed node will be the next node but datas 	   will be swapped*/
+	removed_node = SlistRemoveAfter(current_node);
+	SwapPointers(&current_node->data, &removed_node->data); /* swap datas */
 
 	return removed_node;
 }
