@@ -13,12 +13,11 @@
 
 #include "linked_list.h" /* slist_node_t */
 
-enum is_data_found {DATA_FOUND, DATA_NOT_FOUND};
 enum loop_indicator {LOOP_NOT_FOUND, LOOP_FOUND};
 
 slist_node_t *SlistCreateNode(void *data, slist_node_t *next_node)
 {
-	slist_node_t *new_node = malloc(sizeof(slist_node_t));
+	slist_node_t *new_node = (slist_node_t *)malloc(sizeof(slist_node_t));
 	if(NULL == new_node)
 	{
 		return NULL;
@@ -104,11 +103,8 @@ size_t SlistCount(const slist_node_t *head)
 {
 	size_t node_counter = 0;
 
-	while (NULL != head)
-	{
-		head = head->next_node;
-		++node_counter;
-	}
+	for (; NULL != head; head = head->next_node, ++node_counter)
+	{}
 
 	return node_counter;
 }
@@ -124,7 +120,7 @@ slist_node_t *SlistFind(const slist_node_t *head, const void *data,
 	{
 		int is_data_in_linked_list = match_func(data, current_node->data);
 
-		if (DATA_FOUND == is_data_in_linked_list)
+		if (0 == is_data_in_linked_list)
 		{
 			return (slist_node_t *)current_node;
 		}
@@ -142,7 +138,7 @@ int SlistForEach(slist_node_t *head, action_func_t action_func,
 
 	assert(NULL != action_func);
 
-	while (NULL != head && 0 == action_func_returned_status)
+	while (NULL != head && (0 == action_func_returned_status))
 	{
 		action_func_returned_status = action_func(head->data, 
 												  param_for_action_func);
@@ -163,6 +159,7 @@ slist_node_t *SlistFlip(slist_node_t *head)
 		slist_node_t *next_node = current_node->next_node; /*save next node*/
 
 		current_node->next_node = prev_node; /*update current next to prev*/
+
 		/* move pointers one node ahead */
 		prev_node = current_node; 
 		current_node = next_node;
