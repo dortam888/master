@@ -13,6 +13,9 @@
 
 #include "doubly_linked_list.h" /*dlist_t dlist_node_t dlist_iter_t*/
 
+#define DUMMY_INVALID_ADDRESS ((void *)0xDEADBEEF)
+#define UNUSED(x) ((void)(x))
+
 struct dlist_node
 {
 	void *data;
@@ -51,7 +54,7 @@ dlist_t *DlistCreate(void)
 		return NULL;
 	}
 
-	new_dlist->dummy_head = DlistNodeCreate(NULL, NULL, NULL);
+	new_dlist->dummy_head = DlistNodeCreate(DUMMY_INVALID_ADDRESS, NULL, NULL);
 	if (NULL == new_dlist->dummy_head)
 	{
 		free(new_dlist); 
@@ -59,7 +62,8 @@ dlist_t *DlistCreate(void)
 		return NULL;
 	}
 
-	new_dlist->dummy_tail = DlistNodeCreate(NULL, NULL, new_dlist->dummy_head);
+	new_dlist->dummy_tail = DlistNodeCreate(DUMMY_INVALID_ADDRESS, 
+											NULL, new_dlist->dummy_head);
 	if (NULL == new_dlist->dummy_head)
 	{
 		free(new_dlist);
@@ -69,7 +73,7 @@ dlist_t *DlistCreate(void)
 		return NULL;
 	}
 
-	new_dlist->dummy_head->next_node = DlistEnd(new_dlist);
+	new_dlist->dummy_head->next_node = new_dlist->dummy_tail;
 
 	return new_dlist;
 }
@@ -159,7 +163,7 @@ int DlistIsSameIter(dlist_iter_t iter1, dlist_iter_t iter2)
 
 dlist_iter_t DlistInsert(dlist_t *dlist, dlist_iter_t current, void *data)
 {
-	dlist_iter_t insert_node = NULL;
+	dlist_node_t * insert_node = NULL;
 
 	assert(NULL != dlist);
 	assert(NULL != current);
@@ -231,13 +235,13 @@ void* DlistPopFront(dlist_t *dlist)
 
 void* DlistPopBack(dlist_t *dlist)
 {
-	dlist_iter_t popped_node = NULL;
+	dlist_node_t *popped_node = NULL;
 	void *popped_node_data = NULL;
 
 	assert(!DlistIsEmpty(dlist));
 	assert(NULL != dlist);
 
-	popped_node = DlistIterPrev(DlistEnd(dlist));
+	popped_node = dlist->dummy_tail->prev_node;
 	popped_node_data = DlistGetData(popped_node);
 	DlistRemove(popped_node);
 
@@ -259,8 +263,8 @@ int DlistForEach(dlist_iter_t from, dlist_iter_t to,
 		(0 == action_func_returned_status); 
 		current_iterator = DlistIterNext(current_iterator))
 	{
-		action_func_returned_status = action_func(DlistGetData(current_iterator), 
-												  param_for_action_func);
+		action_func_returned_status = action_func(DlistGetData(current_iterator)
+												  ,param_for_action_func);
 	}
 
 	return action_func_returned_status;
@@ -278,7 +282,7 @@ static int AddOneToParameter(void *element_data, void *parameter)
 	assert(NULL != element_data);
 
 	++(*(size_t *)parameter);
-	(void)element_data;
+	UNUSED(element_data);
 
 	return 0;
 }
@@ -322,7 +326,7 @@ dlist_iter_t DlistFind(const dlist_t *list,
 dlist_iter_t DlistSplice(dlist_iter_t dest, dlist_iter_t src_from, 
 						 dlist_iter_t src_to)
 {
-	dlist_iter_t src_to_prev_cpy = NULL;
+	dlist_node_t *src_to_prev_cpy = NULL;
 
 	assert(NULL != dest);
 	assert(NULL != src_from);
@@ -331,13 +335,13 @@ dlist_iter_t DlistSplice(dlist_iter_t dest, dlist_iter_t src_from,
 	assert(NULL != src_to->prev_node);
 	assert(NULL != src_from->prev_node);
 
-	src_to_prev_cpy = DlistIterPrev(src_to);
+	src_to_prev_cpy = src_to->prev_node;
 
 	src_to->prev_node->next_node = dest;
-	src_to->prev_node = DlistIterPrev(src_from);
+	src_to->prev_node = src_from->prev_node;
 
 	src_from->prev_node->next_node = src_to;
-	src_from->prev_node = DlistIterPrev(dest);
+	src_from->prev_node = dest->prev_node;
 
 	dest->prev_node->next_node = src_from;
 	dest->prev_node = src_to_prev_cpy;
