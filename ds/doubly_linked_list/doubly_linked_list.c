@@ -1,6 +1,6 @@
 /*******************************************************************************
 **** Author: Dor Tambour
-**** Last Update: 21/08/2019
+**** Last Update: 22/08/2019
 **** Reviewer: Hay
 **** Description: This file contains the implementations of functions
 				  for the data structure doubly linked list.
@@ -13,7 +13,7 @@
 
 #include "doubly_linked_list.h" /*dlist_t dlist_node_t dlist_iter_t*/
 
-#define DUMMY_INVALID_ADDRESS ((void *)0xDEADBEEF)
+#define DUMMY_INVALID_ADDRESS ((void *)0xDEADC0DE12DEAD)
 #define UNUSED(x) ((void)(x))
 
 struct dlist_node
@@ -115,6 +115,8 @@ void DlistDestroy(dlist_t *dlist)
 
 	DestroyDlistNodes(dlist);
 	DestroyDlistStruct(dlist);
+
+	dlist = NULL;
 }
 
 dlist_iter_t DlistIterNext(dlist_iter_t current)

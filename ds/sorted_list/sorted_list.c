@@ -1,7 +1,7 @@
 /*******************************************************************************
 **** Author: Dor Tambour
-**** Last Update: 21/08/2019
-**** Reviewer: Hay
+**** Last Update: 22/08/2019
+**** Reviewer: May
 **** Description: This file contains the implementations of functions
 				  for the data structure doubly linked list.
 				  Look at doubly_linked_list.h for more information about the 
@@ -20,6 +20,7 @@ struct sorted_list
 	void *param_is_before;
 };
 
+/***************************SortedListCreate***********************************/
 sorted_list_t *SortedListCreate(is_before_t is_before, void *param)
 {
 	sorted_list_t *new_sorted_list = 
@@ -39,6 +40,7 @@ sorted_list_t *SortedListCreate(is_before_t is_before, void *param)
 	return new_sorted_list;
 }
 
+/***************************SortedListDestroy**********************************/
 void SortedListDestroy(sorted_list_t *sorted_list)
 {
 	DlistDestroy(sorted_list->dlist);
@@ -48,6 +50,7 @@ void SortedListDestroy(sorted_list_t *sorted_list)
 	free(sorted_list); sorted_list = NULL;
 }
 
+/***************************SortedListIterBegin********************************/
 sorted_list_iter_t SortedListBegin(sorted_list_t *sorted_list)
 {
 	sorted_list_iter_t begin = {NULL};
@@ -59,6 +62,7 @@ sorted_list_iter_t SortedListBegin(sorted_list_t *sorted_list)
 	return begin;
 }
 
+/***************************SortedListIterEnd**********************************/
 sorted_list_iter_t SortedListEnd(sorted_list_t *sorted_list)
 {
 	sorted_list_iter_t end = {NULL};
@@ -70,6 +74,7 @@ sorted_list_iter_t SortedListEnd(sorted_list_t *sorted_list)
 	return end;
 }
 
+/***************************SortedListIterNext*********************************/
 sorted_list_iter_t SortedListIterNext(sorted_list_iter_t current)
 {
 	sorted_list_iter_t next = {NULL};
@@ -79,6 +84,7 @@ sorted_list_iter_t SortedListIterNext(sorted_list_iter_t current)
 	return next;
 }
 
+/***************************SortedListIterPrev*********************************/
 sorted_list_iter_t SortedListIterPrev(sorted_list_iter_t current)
 {
 	sorted_list_iter_t prev = {NULL};
@@ -88,16 +94,19 @@ sorted_list_iter_t SortedListIterPrev(sorted_list_iter_t current)
 	return prev;
 }
 
+/***************************SortedListIsGetData********************************/
 void *SortedListGetData(sorted_list_iter_t element)
 {
 	return DlistGetData(element.dlist_iter);
 }
 
+/***************************SortedListIsSameIter*******************************/
 int SortedListIsSameIter(sorted_list_iter_t iter1, sorted_list_iter_t iter2)
 {
 	return DlistIsSameIter(iter1.dlist_iter, iter2.dlist_iter);
 }
 
+/***************************SortedListInsert***********************************/
 sorted_list_iter_t SortedListInsert(sorted_list_t *sorted_list, void *data)
 {
 	sorted_list_iter_t i = {NULL};
@@ -118,6 +127,7 @@ sorted_list_iter_t SortedListInsert(sorted_list_t *sorted_list, void *data)
 	return inserted_node;
 }
 
+/***************************SortedListRemove***********************************/
 sorted_list_iter_t SortedListRemove(sorted_list_iter_t current)
 {
 	sorted_list_iter_t removed_node = {NULL};
@@ -127,6 +137,7 @@ sorted_list_iter_t SortedListRemove(sorted_list_iter_t current)
 	return removed_node;
 }
 
+/***************************SortedListPopFront*********************************/
 void* SortedListPopFront(sorted_list_t *sorted_list)
 {
 	assert(NULL != sorted_list);
@@ -134,6 +145,7 @@ void* SortedListPopFront(sorted_list_t *sorted_list)
 	return DlistPopFront(sorted_list->dlist);
 }
 
+/***************************SortedListPopBack**********************************/
 void* SortedListPopBack(sorted_list_t *sorted_list)
 {
 	assert(NULL != sorted_list);
@@ -141,6 +153,7 @@ void* SortedListPopBack(sorted_list_t *sorted_list)
 	return DlistPopBack(sorted_list->dlist);
 }
 
+/***************************SortedListSize*************************************/
 size_t SortedListSize(const sorted_list_t *sorted_list)
 {
 	assert(NULL != sorted_list);
@@ -148,6 +161,7 @@ size_t SortedListSize(const sorted_list_t *sorted_list)
 	return DlistSize(sorted_list->dlist);
 }
 
+/***************************SortedListIsEmpty**********************************/
 int SortedListIsEmpty(const sorted_list_t *sorted_list)
 {
 	assert(NULL != sorted_list);
@@ -169,8 +183,8 @@ sorted_list_iter_t SortedListFind(const sorted_list_t *list,
 		 !SortedListIsSameIter(to, same_data_node); 
 		 same_data_node = SortedListIterNext(same_data_node))
 	{
-		if (!(list->is_before(data, SortedListGetData(same_data_node), 
-			list->param_is_before) ^ 
+		if ((list->is_before(data, SortedListGetData(same_data_node), 
+			list->param_is_before) == 
 			(list->is_before(SortedListGetData(same_data_node), data, 
 			list->param_is_before))))
 		{
@@ -181,6 +195,7 @@ sorted_list_iter_t SortedListFind(const sorted_list_t *list,
 	return SortedListEnd((sorted_list_t *)list);
 }
 
+/***************************SortedListFindIf***********************************/
 sorted_list_iter_t SortedListFindIf(const sorted_list_t *list,
 									sorted_list_iter_t from,
 									sorted_list_iter_t to,
@@ -197,6 +212,7 @@ sorted_list_iter_t SortedListFindIf(const sorted_list_t *list,
 	return same_data_node;
 }
 
+/***************************SortedListForEach**********************************/
 int SortedListForEach(sorted_list_iter_t from, sorted_list_iter_t to,
 					  action_func_t action_func, void *param_for_action_func)
 {
@@ -204,6 +220,7 @@ int SortedListForEach(sorted_list_iter_t from, sorted_list_iter_t to,
 						action_func, param_for_action_func);
 }
 
+/***************************SortedListMerge************************************/
 void SortedListMerge(sorted_list_t *dest_list, sorted_list_t *src_list)
 {
 	sorted_list_iter_t i = {NULL};
