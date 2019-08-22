@@ -155,7 +155,7 @@ int SortedListIsEmpty(const sorted_list_t *sorted_list)
 	return DlistIsEmpty(sorted_list->dlist);
 }
 
-/***************************SortedListFind************************************
+/***************************SortedListFind*************************************/
 sorted_list_iter_t SortedListFind(const sorted_list_t *list,
 								  sorted_list_iter_t from,
 								  sorted_list_iter_t to,
@@ -169,15 +169,17 @@ sorted_list_iter_t SortedListFind(const sorted_list_t *list,
 		 !SortedListIsSameIter(to, same_data_node); 
 		 same_data_node = SortedListIterNext(same_data_node))
 	{
-		if (1 == list->is_before(data, SortedListGetData(same_data_node), 
-				 list->param_is_before))
+		if (!(list->is_before(data, SortedListGetData(same_data_node), 
+			list->param_is_before) ^ 
+			(list->is_before(SortedListGetData(same_data_node), data, 
+			list->param_is_before))))
 		{
-			return ();
+			return (same_data_node);
 		}
 	}
 
 	return SortedListEnd((sorted_list_t *)list);
-}*/
+}
 
 sorted_list_iter_t SortedListFindIf(const sorted_list_t *list,
 									sorted_list_iter_t from,

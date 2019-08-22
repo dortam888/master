@@ -322,6 +322,8 @@ dlist_iter_t DlistFind(const dlist_t *list,
 dlist_iter_t DlistSplice(dlist_iter_t dest, dlist_iter_t src_from, 
 						 dlist_iter_t src_to)
 {
+	dlist_iter_t src_to_prev_cpy = NULL;
+
 	assert(NULL != dest);
 	assert(NULL != src_from);
 	assert(NULL != src_to);
@@ -329,8 +331,7 @@ dlist_iter_t DlistSplice(dlist_iter_t dest, dlist_iter_t src_from,
 	assert(NULL != src_to->prev_node);
 	assert(NULL != src_from->prev_node);
 
-	dest->prev_node->next_node = src_from;
-	dest->prev_node = src_to;
+	src_to_prev_cpy = DlistIterPrev(src_to);
 
 	src_to->prev_node->next_node = dest;
 	src_to->prev_node = DlistIterPrev(src_from);
@@ -338,6 +339,8 @@ dlist_iter_t DlistSplice(dlist_iter_t dest, dlist_iter_t src_from,
 	src_from->prev_node->next_node = src_to;
 	src_from->prev_node = DlistIterPrev(dest);
 
+	dest->prev_node->next_node = src_from;
+	dest->prev_node = src_to_prev_cpy;
 
 	return src_from;
 }

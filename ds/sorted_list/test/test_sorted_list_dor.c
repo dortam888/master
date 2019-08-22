@@ -164,8 +164,8 @@ static void Flow3()
 	SortedListInsert(new_list1, &b);
 	SortedListInsert(new_list1, &c);
 	SortedListInsert(new_list2, &d);
-	SortedListInsert(new_list2, &e);
 	SortedListInsert(new_list2, &f);
+	SortedListInsert(new_list2, &e);
 
 	SortedListMerge(new_list1, new_list2);
 	if (6 != SortedListSize(new_list1))
@@ -189,12 +189,56 @@ static void Flow3()
 	}
 }
 
+static void Flow4()
+{
+	sorted_list_t *new_list = SortedListCreate(is_before_int, NULL);
+	int a = 77;
+	int b = 42;
+	int c = 6;
+	int in_list = 6;
+	int not_in_list = 12;
+	sorted_list_iter_t i = {NULL};
+	size_t error_counter = 0;
+
+	SortedListInsert(new_list, &a);
+	SortedListInsert(new_list, &b);
+	i = SortedListInsert(new_list, &c);
+
+	if (*(int *)SortedListGetData(SortedListFind(new_list, 
+		SortedListBegin(new_list), SortedListEnd(new_list), &in_list)) != c)
+	{
+		FAIL("Find function didn't find data which is on list");
+		++error_counter;
+	}
+
+	if (SortedListEnd(new_list).dlist_iter != 
+		SortedListFind(new_list, SortedListBegin(new_list), i, &in_list).dlist_iter)
+	{
+		FAIL("Find function find data which is not in range");
+		++error_counter;
+	}
+
+	if (SortedListEnd(new_list).dlist_iter != SortedListFind(new_list, 
+		SortedListBegin(new_list), SortedListEnd(new_list), &not_in_list).dlist_iter)
+	{
+		FAIL("Find function find data which is not on list");
+		++error_counter;
+	}
+
+	SortedListDestroy(new_list);
+
+	if (0 == error_counter)
+	{
+		PASS("Flow4. functions: Find");
+	}
+}
 
 int main()
 {
 	Flow1();
 	Flow2();
 	Flow3();
+	Flow4();
 
     return 0;
 }
