@@ -61,7 +61,7 @@ dlist_iter_t DlistIterPrev(dlist_iter_t current);
   # Return Value:
 	pointer to the beginning linked list
 ############################################################################*/
-dlist_iter_t DlistBegin(const dlist_t *dlist);
+dlist_iter_t DlistBegin(dlist_t *dlist);
 
 /*############################################################################
   # Description:
@@ -71,7 +71,7 @@ dlist_iter_t DlistBegin(const dlist_t *dlist);
   # Return Value:
 	pointer to the end of linked list
 ############################################################################*/
-dlist_iter_t DlistEnd(const dlist_t *dlist);
+dlist_iter_t DlistEnd(dlist_t *dlist);
 
 /*############################################################################
   # Description:
@@ -113,7 +113,7 @@ dlist_iter_t DlistInsert(dlist_t *dlist, dlist_iter_t current, void *data);
   # Parameters:
 	current - iterator to element to be removed
   # Return Value:
-	iterator to the removed element
+	iterator to the next element
 ############################################################################*/
 dlist_iter_t DlistRemove(dlist_iter_t current);
 
@@ -195,8 +195,9 @@ int DlistIsEmpty(const dlist_t *dlist);
 ############################################################################*/
 typedef int (*match_func_t)(const void *element_data, const void *user_data);
 
-dlist_iter_t DlistFind(const void *data, dlist_iter_t to, 
-					   dlist_iter_t from, match_func_t match_func);
+dlist_iter_t DlistFind(const dlist_t *list,
+					   dlist_iter_t from, dlist_iter_t to, 
+					   match_func_t match_func, const void *data);
 
 /*############################################################################
   # Description:
@@ -211,11 +212,11 @@ dlist_iter_t DlistFind(const void *data, dlist_iter_t to,
 ############################################################################*/
 typedef int (*action_func_t)(void *element_data, void *param);
 
-int DlistForEach(action_func_t action_func, dlist_iter_t to,
-				 dlist_iter_t from, void *param_for_action_func);
+int DlistForEach(dlist_iter_t from, dlist_iter_t to,
+				 action_func_t action_func, void *param_for_action_func);
 /*############################################################################
   # Description:
-	takes one slice of one list and move it to specified iterator on 		other list
+	takes one slice of one list and move it to specified iterator on other list
   # Parameters:
 	dest - iterator to where to put the slice
 	src_to - iterator to end of slice

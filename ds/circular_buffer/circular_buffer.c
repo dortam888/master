@@ -15,21 +15,19 @@
 #include "circular_buffer.h" /* c_buff_t */
 
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
-#define WORDSIZE sizeof(size_t)
-#define INITIAL_VALUE 1
 
 struct c_buff
 {
 	char *end; /* fixed pointer to the end of the buffer. char * for pointer arithematic consideration*/
 	char *read; /* pointer that indicates the last byte that was read */
 	size_t written_bytes_not_read; /* how many bytes were written and weren't been read*/
-	char circular_buffer_start[INITIAL_VALUE]; /* fixed pointer to the start of the circ_buffer. */
+	char circular_buffer_start[1]; /* fixed pointer to the start of the circ_buffer. */
 };
 
 c_buff_t *CBuffCreate(size_t capacity)
 {
-	c_buff_t *circ_buff = malloc(capacity + sizeof(c_buff_t) + INITIAL_VALUE -
-								 WORDSIZE); /* save allocated memory that is added from struct padding */
+	c_buff_t *circ_buff = malloc(capacity + offsetof(c_buff_t, 
+													 circular_buffer_start);
 	if (NULL == circ_buff)
 	{
 		return NULL;

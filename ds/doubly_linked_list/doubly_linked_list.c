@@ -1,5 +1,15 @@
-#include <stdlib.h>
-#include <assert.h>
+/*******************************************************************************
+**** Author: Dor Tambour
+**** Last Update: 21/08/2019
+**** Reviewer: Hay
+**** Description: This file contains the implementations of functions
+				  for the data structure doubly linked list.
+				  Look at doubly_linked_list.h for more information about the 
+				  functions.
+*******************************************************************************/
+
+#include <stdlib.h> /* malloc free */
+#include <assert.h> /* assert */
 
 #include "doubly_linked_list.h" /*dlist_t dlist_node_t dlist_iter_t*/
 
@@ -19,7 +29,7 @@ struct dlist
 static dlist_node_t *DlistNodeCreate(void *data, dlist_node_t *next_node, 
 									dlist_node_t *prev_node)
 {
-	dlist_node_t *new_node = malloc(sizeof(dlist_node_t));
+	dlist_node_t *new_node = (dlist_node_t *)malloc(sizeof(dlist_node_t));
 	if(NULL == new_node)
 	{
 		return NULL;
@@ -35,30 +45,48 @@ static dlist_node_t *DlistNodeCreate(void *data, dlist_node_t *next_node,
 
 dlist_t *DlistCreate(void)
 {
-	dlist_t *new_dlist = malloc(sizeof(dlist_t));
+	dlist_t *new_dlist = (dlist_t *)malloc(sizeof(dlist_t));
 	if (NULL == new_dlist)
 	{
 		return NULL;
 	}
 
 	new_dlist->dummy_head = DlistNodeCreate(NULL, NULL, NULL);
-	if (NULL != new_dlist->dummy_head)
+	if (NULL == new_dlist->dummy_head)
 	{
+		free(new_dlist); 
+		new_dlist = NULL;
 		return NULL;
 	}
 
 	new_dlist->dummy_tail = DlistNodeCreate(NULL, NULL, new_dlist->dummy_head);
-	if (NULL != new_dlist->dummy_head)
+	if (NULL == new_dlist->dummy_head)
 	{
+		free(new_dlist);
+		free(new_dlist->dummy_head);
+		new_dlist = NULL;
+		new_dlist->dummy_head =  NULL;
 		return NULL;
 	}
 
-	new_dlist->dummy_head->next_node = new_dlist->dummy_tail;
+	new_dlist->dummy_head->next_node = DlistEnd(new_dlist);
 
 	return new_dlist;
 }
 
-void DlistDestroy(dlist_t *dlist)
+static void DestroyDlistStruct(dlist_t *dlist)
+{
+	free(dlist->dummy_head);
+	dlist->dummy_head = NULL;
+
+	free(dlist->dummy_tail);
+	dlist->dummy_tail = NULL;
+
+	free(dlist);
+	dlist = NULL;
+}
+
+static void DestroyDlistNodes(dlist_t *dlist)
 {
 	dlist_iter_t current_in_list = NULL;
 	dlist_iter_t list_end = NULL;
@@ -69,21 +97,20 @@ void DlistDestroy(dlist_t *dlist)
 	current_in_list = DlistBegin(dlist);
 	list_end = DlistEnd(dlist);
 
-	while (next != list_end)
+	while (!DlistIsSameIter(current_in_list,list_end))
 	{
 		next = DlistIterNext(current_in_list);
 		free(current_in_list);
-		current_in_list = NULL;
+		current_in_list = next;
 	}
+}
 
-	free(dlist->dummy_head);
-	dlist->dummy_head = NULL;
+void DlistDestroy(dlist_t *dlist)
+{
+	assert(dlist != NULL);
 
-	free(dlist->dummy_tail);
-	dlist->dummy_tail = NULL;
-
-	free(dlist);
-	dlist = NULL;
+	DestroyDlistNodes(dlist);
+	DestroyDlistStruct(dlist);
 }
 
 dlist_iter_t DlistIterNext(dlist_iter_t current)
@@ -100,7 +127,7 @@ dlist_iter_t DlistIterPrev(dlist_iter_t current)
 	return (current->prev_node);
 }
 
-dlist_iter_t DlistBegin(const dlist_t *dlist)
+dlist_iter_t DlistBegin(dlist_t *dlist)
 {
 	assert(NULL != dlist);
 	assert(NULL != dlist->dummy_head);
@@ -108,7 +135,7 @@ dlist_iter_t DlistBegin(const dlist_t *dlist)
 	return DlistIterNext(dlist->dummy_head);
 }
 
-dlist_iter_t DlistEnd(const dlist_t *dlist)
+dlist_iter_t DlistEnd(dlist_t *dlist)
 {
 	assert(NULL != dlist);
 
@@ -136,6 +163,7 @@ dlist_iter_t DlistInsert(dlist_t *dlist, dlist_iter_t current, void *data)
 
 	assert(NULL != dlist);
 	assert(NULL != current);
+	assert(NULL != current->prev_node);
 
 	insert_node = DlistNodeCreate(data, current, DlistIterPrev(current));
 	if (NULL == insert_node)
@@ -151,17 +179,24 @@ dlist_iter_t DlistInsert(dlist_t *dlist, dlist_iter_t current, void *data)
 
 dlist_iter_t DlistRemove(dlist_iter_t current)
 {
-	dlist_iter_t removed_node = NULL;
+	dlist_iter_t removed_node_next = NULL;
 
 	assert(NULL != current);
+	assert(NULL != current->prev_node);
+	assert(NULL != current->next_node);
 
-	removed_node = current;
+	removed_node_next = DlistIterNext(current);
 	current->prev_node->next_node = DlistIterNext(current);
 	current->next_node->prev_node = DlistIterPrev(current);
+
 	current->next_node = NULL;
 	current->prev_node = NULL;
+	current->data = NULL;
 
-	return removed_node;
+	free(current);
+	current = NULL;
+
+	return removed_node_next;
 }
 
 dlist_iter_t DlistPushFront(dlist_t *dlist, void *data)
@@ -187,10 +222,9 @@ void* DlistPopFront(dlist_t *dlist)
 	assert(NULL != dlist);
 	assert(NULL != dlist->dummy_head);
 
-	popped_node = DlistRemove(DlistBegin(dlist));
+	popped_node = DlistBegin(dlist);
 	popped_node_data = DlistGetData(popped_node);
-
-	free(popped_node);
+	DlistRemove(popped_node);
 
 	return popped_node_data;
 }
@@ -202,29 +236,31 @@ void* DlistPopBack(dlist_t *dlist)
 
 	assert(!DlistIsEmpty(dlist));
 	assert(NULL != dlist);
-	assert(NULL != dlist->dummy_tail);
 
-	popped_node = DlistRemove(DlistIterPrev(DlistEnd(dlist)));
+	popped_node = DlistIterPrev(DlistEnd(dlist));
 	popped_node_data = DlistGetData(popped_node);
-
-	free(popped_node);
+	DlistRemove(popped_node);
 
 	return popped_node_data;
 }
 
-int DlistForEach(action_func_t action_func, dlist_iter_t to,
-				 dlist_iter_t from, void *param_for_action_func)
+int DlistForEach(dlist_iter_t from, dlist_iter_t to,
+				 action_func_t action_func, void *param_for_action_func)
 {
 	int action_func_returned_status = 0;
-	dlist_iter_t current = from;
+	dlist_iter_t current_iterator = from;
 
 	assert(NULL != action_func);
+	assert(NULL != to);
+	assert(NULL != from);
 
-	while (current != to && 0 == action_func_returned_status)
+	for (current_iterator = from; 
+		!DlistIsSameIter(to, current_iterator) && 
+		(0 == action_func_returned_status); 
+		current_iterator = DlistIterNext(current_iterator))
 	{
-		action_func_returned_status = action_func(DlistGetData(current), 
+		action_func_returned_status = action_func(DlistGetData(current_iterator), 
 												  param_for_action_func);
-		current = DlistIterNext(current);
 	}
 
 	return action_func_returned_status;
@@ -232,12 +268,16 @@ int DlistForEach(action_func_t action_func, dlist_iter_t to,
 
 int DlistIsEmpty(const dlist_t *dlist)
 {
-	return (DlistBegin(dlist) == DlistEnd(dlist));
+	return (DlistIsSameIter(DlistBegin((dlist_t *)dlist),
+							DlistEnd((dlist_t *)dlist)));
 }
 
-static int Count(void *element_data, void *counter)
+static int AddOneToParameter(void *element_data, void *parameter)
 {
-	++(*(size_t *)counter);
+	assert(NULL != parameter);
+	assert(NULL != element_data);
+
+	++(*(size_t *)parameter);
 	(void)element_data;
 
 	return 0;
@@ -247,28 +287,57 @@ size_t DlistSize(const dlist_t *dlist)
 {
 	size_t count_list_elements = 0;
 
-	DlistForEach(Count, DlistBegin(dlist), DlistEnd(dlist), 
-				 &count_list_elements);
+	assert(NULL != dlist);
+
+	DlistForEach(DlistBegin((dlist_t *)dlist), DlistEnd((dlist_t *)dlist),
+				 AddOneToParameter, &count_list_elements);
 
 	return count_list_elements;
 }
 
-dlist_iter_t DlistFind(const void *data, dlist_iter_t to, 
-					   dlist_iter_t from, match_func_t match_func)
+dlist_iter_t DlistFind(const dlist_t *list,
+					   dlist_iter_t from, dlist_iter_t to, 
+					   match_func_t match_func, const void *data)
 {
 	dlist_iter_t current_iterator = from;
 
 	assert(NULL != match_func);
+	assert(NULL != list);
+	assert(NULL != to);
+	assert(NULL != from);
 
-	while (to != current_iterator)
+	for (current_iterator = from; 
+		 !DlistIsSameIter(to, current_iterator); 
+		 current_iterator = DlistIterNext(current_iterator))
 	{
 		if (0 == match_func(data, DlistGetData(current_iterator)))
 		{
 			return current_iterator;
 		}
-
-		current_iterator = DlistIterNext(current_iterator);
 	}
 
-	return NULL;
+	return DlistEnd((dlist_t *)list);
+}
+
+dlist_iter_t DlistSplice(dlist_iter_t dest, dlist_iter_t src_from, 
+						 dlist_iter_t src_to)
+{
+	assert(NULL != dest);
+	assert(NULL != src_from);
+	assert(NULL != src_to);
+	assert(NULL != dest->prev_node);
+	assert(NULL != src_to->prev_node);
+	assert(NULL != src_from->prev_node);
+
+	dest->prev_node->next_node = src_from;
+	dest->prev_node = src_to;
+
+	src_to->prev_node->next_node = dest;
+	src_to->prev_node = DlistIterPrev(src_from);
+
+	src_from->prev_node->next_node = src_to;
+	src_from->prev_node = DlistIterPrev(dest);
+
+
+	return src_from;
 }
