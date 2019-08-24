@@ -22,7 +22,7 @@ typedef struct pq pq_t;
 	in case of success returns a pointer to the queue itself,
 	in case of failure returns NULL
 ##############################################################################*/
-typedef int (*cmp_func_t)(void *data1, void *dat2, void *param);
+typedef int (*cmp_func_t)(const void *data1, const void *data2, void *param);
 
 pq_t *PriorityQCreate(cmp_func_t cmp_func, void *param_for_cmp);
 

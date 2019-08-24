@@ -12,7 +12,7 @@
 #include <assert.h> /* assert */
 
 #include "sorted_list.h" /*sorted_list_iter_t sorted_list_t*/
-#include "priority_queue.h"
+#include "priority_queue.h" /*pq_t*/
 
 struct pq
 {
@@ -21,25 +21,31 @@ struct pq
 	void *param_for_cmp;
 };
 
+static int Cmp2IsBeforeFunc(const void *data1, const void *data2, void *npq)
+{
+	pq_t *pq = (pq_t *)npq;
+	return (pq->cmp_func(data1, data2, pq->param_for_cmp) > 0);
+}
+
 pq_t *PriorityQCreate(cmp_func_t cmp_func, void *param_for_cmp)
 {
-	pq_t *new_priority_queue = malloc(sizeof(pq_t));
-	if (NULL == new_priority_queue)
+	pq_t *new_pq = malloc(sizeof(pq_t));
+	if (NULL == new_pq)
 	{
 		return NULL;
 	}
 
-	new_priority_queue->cmp_func = cmp_func;
-	new_priority_queue->param_for_cmp = param_for_cmp;
-	new_priority_queue->sorted_list = SortedListCreate(cmp_func, param_for_cmp);
-	if (NULL == new_priority_queue->sorted_list)
+	new_pq->cmp_func = cmp_func;
+	new_pq->param_for_cmp = param_for_cmp;
+	new_pq->sorted_list = SortedListCreate(Cmp2IsBeforeFunc, new_pq);
+	if (NULL == new_pq->sorted_list)
 	{
-		free(new_priority_queue);
-		new_priority_queue = NULL;
+		free(new_pq);
+		new_pq = NULL;
 		return NULL;
 	}
 
-	return new_priority_queue;
+	return new_pq;
 }
 
 void PriorityQDestroy(pq_t *pq)
@@ -74,7 +80,7 @@ int PriorityQEnqueue(pq_t *pq, void *data)
 	sorted_list_iter_t i = {NULL};
 
 	i = SortedListInsert(pq->sorted_list, data);
-	if (SortedListIsSameIter(SortedListEnd(pq->sorted_list),i))
+	if (SortedListIsSameIter(SortedListEnd(pq->sorted_list), i))
 	{
 		return 1;
 	}
@@ -93,31 +99,34 @@ void* PriorityQPeek(const pq_t *pq)
 {
 	assert(NULL != pq);
 
-	return SortedListPopFront(pq->sorted_list);
-}
-
-static void DestroyDlistNodes(dlist_t *dlist)
-{
-	dlist_iter_t current_in_list = NULL;
-	dlist_iter_t list_end = NULL;
-	dlist_iter_t next = NULL;
-
-	assert(dlist != NULL);
-
-	current_in_list = DlistBegin(dlist);
-	list_end = DlistEnd(dlist);
-
-	while (!DlistIsSameIter(current_in_list,list_end))
-	{
-		next = DlistIterNext(current_in_list);
-		free(current_in_list);
-		current_in_list = next;
-	}
+	return SortedListGetData(SortedListBegin(pq->sorted_list));
 }
 
 void PriorityQClear(pq_t *pq)
 {
-	DestroyDlistNodes(pq->sorted_list->dlist);
+	sorted_list_iter_t current_in_list = {NULL};
+	sorted_list_iter_t list_end = {NULL};
+
+	assert(pq != NULL);
+
+	current_in_list = SortedListBegin(pq->sorted_list);
+	list_end = SortedListEnd(pq->sorted_list);
+
+	while (!SortedListIsSameIter(current_in_list,list_end))
+	{
+		current_in_list = SortedListRemove(current_in_list);
+	};
 }
 
-
+void PriorityQErase(pq_t *pq, void *data_to_erase, is_match_t is_match)
+{
+	sorted_list_t *pq_sorted = NULL;
+	
+	assert(NULL != pq);
+	
+	pq_sorted = pq->sorted_list;
+	
+	SortedListRemove(SortedListFindIf(pq_sorted,
+                     SortedListBegin(pq_sorted), SortedListEnd(pq_sorted),
+                     (match_func_t)is_match, data_to_erase));
+}
