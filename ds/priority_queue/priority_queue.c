@@ -1,7 +1,7 @@
 /*******************************************************************************
 **** Author: Dor Tambour
 **** Last Update: 22/08/2019
-**** Reviewer: May
+**** Reviewer: Hay
 **** Description: This file contains the implementations of functions
 				  for the data structure doubly linked list.
 				  Look at doubly_linked_list.h for more information about the 
@@ -21,10 +21,15 @@ struct pq
 	void *param_for_cmp;
 };
 
-static int Cmp2IsBeforeFunc(const void *data1, const void *data2, void *npq)
+static int Cmp2IsBeforeFunc(const void *data1, const void *data2, void *pq)
 {
-	pq_t *pq = (pq_t *)npq;
-	return (pq->cmp_func(data1, data2, pq->param_for_cmp) > 0);
+	pq_t *new_pq = (pq_t *)pq;
+	
+	assert(NULL != data1);
+	assert(NULL != data2);
+	assert(NULL != pq)
+	
+	return (new_pq->cmp_func(data1, data2, new_pq->param_for_cmp) > 0);
 }
 
 pq_t *PriorityQCreate(cmp_func_t cmp_func, void *param_for_cmp)
@@ -37,6 +42,7 @@ pq_t *PriorityQCreate(cmp_func_t cmp_func, void *param_for_cmp)
 
 	new_pq->cmp_func = cmp_func;
 	new_pq->param_for_cmp = param_for_cmp;
+
 	new_pq->sorted_list = SortedListCreate(Cmp2IsBeforeFunc, new_pq);
 	if (NULL == new_pq->sorted_list)
 	{
@@ -77,12 +83,17 @@ int PriorityQIsEmpty(const pq_t *pq)
 
 int PriorityQEnqueue(pq_t *pq, void *data)
 {
-	sorted_list_iter_t i = {NULL};
+	sorted_list_iter_t inserted_node = {NULL};
+	sorted_list_t *pq_sorted = NULL;
+	
+	assert(NULL != pq);
+	
+	pq_sorted = pq->sorted_list;
 
-	i = SortedListInsert(pq->sorted_list, data);
-	if (SortedListIsSameIter(SortedListEnd(pq->sorted_list), i))
+	inserted_node = SortedListInsert(pq_sorted, data);
+	if (SortedListIsSameIter(SortedListEnd(pq_sorted), inserted_node))
 	{
-		return 1;
+		return -1;
 	}
 
 	return 0;
@@ -106,11 +117,13 @@ void PriorityQClear(pq_t *pq)
 {
 	sorted_list_iter_t current_in_list = {NULL};
 	sorted_list_iter_t list_end = {NULL};
+	sorted_list_t *pq_sorted = NULL;
 
 	assert(pq != NULL);
 
-	current_in_list = SortedListBegin(pq->sorted_list);
-	list_end = SortedListEnd(pq->sorted_list);
+	pq_sorted = pq->sorted_list;
+	current_in_list = SortedListBegin(pq_sorted);
+	list_end = SortedListEnd(pq_sorted);
 
 	while (!SortedListIsSameIter(current_in_list,list_end))
 	{

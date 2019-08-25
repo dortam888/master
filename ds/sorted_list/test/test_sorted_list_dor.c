@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "sorted_list.h"
 
@@ -10,14 +11,14 @@ static int is_before_int(const void *num1, const void *num2,
 					 void *param)
 {
 	(void)param;
-	return (*(int *)num1 < *(int *)num2);
+	return (*(int *)num1 <= *(int *)num2);
 }
 
 static int is_before_string_len(const void *str1, const void *str2, 
 								void *param)
 {
 	(void)param;
-	return (strlen((char *)str1) > strlen((char *)str2));
+	return (strlen((char *)str1) < strlen((char *)str2));
 }
 
 static void Flow1()
@@ -155,8 +156,8 @@ static void Flow3()
 	int a = 77;
 	int b = 42;
 	int c = 55;
-	int d = 10;
-	int e = 22;
+	int d = 60;
+	int e = 50;
 	int f = 100;
 	size_t error_counter = 0;
 
@@ -179,13 +180,20 @@ static void Flow3()
 		FAIL("Merge delete didn't work");
 		++error_counter;
 	}
+	
+	assert(*(int *)SortedListGetData(SortedListBegin(new_list1)) == f);
+	assert(*(int *)SortedListGetData(SortedListIterNext(SortedListBegin(new_list1))) == a);
+	assert(*(int *)SortedListGetData(SortedListIterNext(SortedListIterNext(SortedListBegin(new_list1)))) == d);
+	assert(*(int *)SortedListGetData(SortedListIterNext(SortedListIterNext(SortedListIterNext(SortedListBegin(new_list1))))) == c);
+	assert(*(int *)SortedListGetData(SortedListIterNext(SortedListIterNext(SortedListIterNext(SortedListIterNext(SortedListBegin(new_list1)))))) == e);
+	assert(*(int *)SortedListGetData(SortedListIterNext(SortedListIterNext(SortedListIterNext(SortedListIterNext(SortedListIterNext(SortedListBegin(new_list1))))))) == b);
 
 	SortedListDestroy(new_list1);
 	SortedListDestroy(new_list2);
 
 	if (0 == error_counter)
 	{
-		PASS("Flow2. functions: Merge");
+		PASS("Flow3. functions: Merge");
 	}
 }
 
@@ -204,6 +212,7 @@ static void Flow4()
 	SortedListInsert(new_list, &b);
 	i = SortedListInsert(new_list, &c);
 
+	/*Check data is in the list*/
 	if (*(int *)SortedListGetData(SortedListFind(new_list, 
 		SortedListBegin(new_list), SortedListEnd(new_list), &in_list)) != c)
 	{
@@ -211,6 +220,7 @@ static void Flow4()
 		++error_counter;
 	}
 
+	/*Check data which is in the list is not found because its out of range*/
 	if (SortedListEnd(new_list).dlist_iter != 
 		SortedListFind(new_list, SortedListBegin(new_list), i, &in_list).dlist_iter)
 	{
@@ -218,6 +228,7 @@ static void Flow4()
 		++error_counter;
 	}
 
+	/*Check data which is not in the list will not found*/
 	if (SortedListEnd(new_list).dlist_iter != SortedListFind(new_list, 
 		SortedListBegin(new_list), SortedListEnd(new_list), &not_in_list).dlist_iter)
 	{
@@ -233,12 +244,114 @@ static void Flow4()
 	}
 }
 
+static int CmpFirstLetter(const void *data1, const void *data2)
+{
+	char *letter1 = (char *)data1;
+	char *letter2 = (char *)data2;
+	
+	if (*letter1 == * letter2)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+static int CmpFirst2Letters(const void *data1, const void *data2)
+{
+	char *letter1 = (char *)data1;
+	char *letter2 = (char *)data2;
+	
+	if (*letter1 == * letter2)
+	{
+		++letter1;
+		++letter2;
+	}
+	else
+	{
+		return 1;
+	}
+	
+	if (*letter1 == * letter2)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+static void Flow5()
+{
+	sorted_list_t *new_list = SortedListCreate(is_before_string_len, NULL);
+	char *dor = "dor";
+	char *hay = "hay";
+	char *nitzan = "nitzan";
+	char *omri = "omri";
+	char *alex = "alex";
+	char *daniel = "daniel";
+	char *mai = "mai";
+	char *find_doron = "doron";
+	char *find_shlomit = "shlomit";
+	sorted_list_iter_t find = {NULL};
+	size_t error_counter = 0;
+	
+	SortedListInsert(new_list, dor);
+	SortedListInsert(new_list, hay);
+	SortedListInsert(new_list, nitzan);
+	SortedListInsert(new_list, omri);
+	SortedListInsert(new_list, alex);
+	SortedListInsert(new_list, daniel);
+	SortedListInsert(new_list, mai);
+	
+	find = SortedListFindIf(new_list, 
+					 SortedListBegin(new_list), SortedListEnd(new_list), 
+					 CmpFirstLetter, find_doron);
+	
+	if (daniel != SortedListGetData(find))
+	{
+		FAIL("didn't find right one");
+		++error_counter;
+	}
+	
+	find = SortedListFindIf(new_list, 
+					 SortedListBegin(new_list), SortedListEnd(new_list), 
+					 CmpFirst2Letters, find_doron);
+	
+	if (dor != SortedListGetData(find))
+	{
+		FAIL("didn't find right one");
+		++error_counter;
+	}
+
+	find = SortedListFindIf(new_list, 
+					 SortedListBegin(new_list), SortedListEnd(new_list), 
+					 CmpFirst2Letters, find_shlomit);
+					 
+	if (!SortedListIsSameIter(SortedListEnd(new_list), find))
+	{
+		FAIL("didn't return end when not find");
+		++error_counter;
+	}
+	
+	SortedListDestroy(new_list);
+
+	if (0 == error_counter)
+	{
+		PASS("Flow5. functions: FindIf");
+	}
+}
+
 int main()
 {
 	Flow1();
 	Flow2();
 	Flow3();
 	Flow4();
+	Flow5();
 
     return 0;
 }

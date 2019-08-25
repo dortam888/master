@@ -25,6 +25,10 @@ sorted_list_t *SortedListCreate(is_before_t is_before, void *param)
 {
 	sorted_list_t *new_sorted_list = 
 	(sorted_list_t *)malloc(sizeof(sorted_list_t));
+	if (NULL == new_sorted_list)
+	{
+		return NULL;
+	}
 
 	new_sorted_list->dlist = DlistCreate();
 	if(NULL == new_sorted_list->dlist)
@@ -43,6 +47,8 @@ sorted_list_t *SortedListCreate(is_before_t is_before, void *param)
 /***************************SortedListDestroy**********************************/
 void SortedListDestroy(sorted_list_t *sorted_list)
 {
+	assert(NULL != sorted_list);
+	
 	DlistDestroy(sorted_list->dlist);
 	sorted_list->dlist = NULL;
 	sorted_list->is_before = NULL;
@@ -130,11 +136,11 @@ sorted_list_iter_t SortedListInsert(sorted_list_t *sorted_list, void *data)
 /***************************SortedListRemove***********************************/
 sorted_list_iter_t SortedListRemove(sorted_list_iter_t current)
 {
-	sorted_list_iter_t removed_node = {NULL};
+	sorted_list_iter_t next_to_removed_node = {NULL};
 
-	removed_node.dlist_iter = DlistRemove(current.dlist_iter);
+	next_to_removed_node.dlist_iter = DlistRemove(current.dlist_iter);
 
-	return removed_node;
+	return next_to_removed_node;
 }
 
 /***************************SortedListPopFront*********************************/
@@ -169,6 +175,24 @@ int SortedListIsEmpty(const sorted_list_t *sorted_list)
 	return DlistIsEmpty(sorted_list->dlist);
 }
 
+static int IsDataEqual(const sorted_list_t *list, const void *data, 
+					   sorted_list_iter_t node)
+{
+	is_before_t list_is_before = NULL;
+	void *list_param = NULL;
+	void *user_data = NULL;
+	
+	assert(NULL != list);
+	assert(NULL != data);
+	
+	list_is_before = list->is_before;
+	list_param = list->param_is_before;
+	user_data = SortedListGetData(node);
+
+	return (list_is_before(data, user_data, list_param) == 
+			(list_is_before(user_data, data, list_param)));
+}
+
 /***************************SortedListFind*************************************/
 sorted_list_iter_t SortedListFind(const sorted_list_t *list,
 								  sorted_list_iter_t from,
@@ -183,12 +207,9 @@ sorted_list_iter_t SortedListFind(const sorted_list_t *list,
 		 !SortedListIsSameIter(to, same_data_node); 
 		 same_data_node = SortedListIterNext(same_data_node))
 	{
-		if ((list->is_before(data, SortedListGetData(same_data_node), 
-			list->param_is_before) == 
-			(list->is_before(SortedListGetData(same_data_node), data, 
-			list->param_is_before))))
+		if (IsDataEqual(list, data, same_data_node))
 		{
-			return (same_data_node);
+			return same_data_node;
 		}
 	}
 
@@ -206,8 +227,8 @@ sorted_list_iter_t SortedListFindIf(const sorted_list_t *list,
 
 	assert(NULL != list);
 
-	same_data_node.dlist_iter = DlistFind(list->dlist, from.dlist_iter, to.dlist_iter, 
-										  match_func, data);
+	same_data_node.dlist_iter = DlistFind(list->dlist, from.dlist_iter, 
+	                                      to.dlist_iter, match_func, data);
 
 	return same_data_node;
 }
@@ -223,30 +244,38 @@ int SortedListForEach(sorted_list_iter_t from, sorted_list_iter_t to,
 /***************************SortedListMerge************************************/
 void SortedListMerge(sorted_list_t *dest_list, sorted_list_t *src_list)
 {
-	sorted_list_iter_t i = {NULL};
+	sorted_list_iter_t src = {NULL};
 	sorted_list_iter_t next_src = {NULL};
 	sorted_list_iter_t next_dest = {NULL};
+	sorted_list_iter_t src_end = {NULL};
+	sorted_list_iter_t dest_end = {NULL};
+	void *dest_param = NULL;
+	is_before_t dest_is_before = NULL;
 
 	assert(NULL != dest_list);
 	assert(NULL != src_list);
 
 	next_dest = SortedListBegin(dest_list);
+	src_end = SortedListEnd(src_list);
+	dest_end = SortedListEnd(dest_list);
+	dest_param = dest_list->param_is_before;
+	dest_is_before = dest_list->is_before;
 
-	for (i = SortedListBegin(src_list); 
-		 !SortedListIsSameIter(i, SortedListEnd(src_list));
-		 i = next_src)
+	for (src = SortedListBegin(src_list); 
+		 !SortedListIsSameIter(src, src_end);
+		 src = next_src)
 	{
 		for (; 
-		     !SortedListIsSameIter(next_dest, SortedListEnd(dest_list)) &&
-			 !dest_list->is_before(SortedListGetData(next_dest), 
-								   SortedListGetData(i), 
-								   dest_list->param_is_before);
+		     !SortedListIsSameIter(next_dest, dest_end) &&
+			 !dest_is_before(SortedListGetData(next_dest), 
+								   SortedListGetData(src), 
+								   dest_param);
 		     next_dest = SortedListIterNext(next_dest))
 		{}
 
-		next_src = SortedListIterNext(i);
+		next_src = SortedListIterNext(src);
 		DlistSplice(next_dest.dlist_iter, 
-					i.dlist_iter, DlistIterNext(i.dlist_iter));
+					src.dlist_iter, DlistIterNext(src.dlist_iter));
 	}
 
 }
