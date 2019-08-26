@@ -13,6 +13,8 @@
 
 typedef struct scheduler scheduler_t;
 
+enum {STOP, REPEAT};
+#define STOP_REPEAT
 /*#############################################################################
   # Description: 
 	creates the scheduler 
@@ -45,8 +47,8 @@ void SchedDestroy(scheduler_t *sched);
 ##############################################################################*/
 typedef int (*task_action_func_t)(void *params);
 
-ilrd_uid_t AddTask(scheduler_t *sched, task_action_func_t action_func, void *params,
-				   time_t exe_interval_in_seconds, time_t execution_start_time);
+ilrd_uid_t SchedAddTask(scheduler_t *sched, task_action_func_t action_func, void *params,
+                        time_t exe_interval_in_seconds, time_t execution_start_time);
 
 /*#############################################################################
   # Description: 
@@ -57,7 +59,7 @@ ilrd_uid_t AddTask(scheduler_t *sched, task_action_func_t action_func, void *par
   # Return Value:
 	None
 ##############################################################################*/
-void RemoveTask(scheduler_t *sched, ilrd_uid_t task_uid);
+void SchedRemoveTask(scheduler_t *sched, ilrd_uid_t task_uid);
 
 /*#############################################################################
   # Description: 

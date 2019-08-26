@@ -15,8 +15,9 @@
 
 typedef struct task task_t;
 
+#ifndef STOP_REPEAT
 enum {STOP, REPEAT}; /*return value for action func to know if task containing it should be repeated or stops*/
-
+#endif
 /*#############################################################################
   # Description: 
 	creates a task 
