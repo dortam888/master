@@ -1,3 +1,11 @@
+/*******************************************************************************
+**** Author: Dor Tambour
+**** Last Update: 28/08/2019
+**** Reviewer: Nitzan
+**** Description: This file contains implementations of functions
+				  for tasks
+*******************************************************************************/
+
 #include <stdlib.h> /*malloc free*/
 #include <assert.h> /*assert*/
 
@@ -48,9 +56,6 @@ void TaskDestroy(task_t *task)
 
 	task->action_func = NULL;
 	task->params = NULL;
-	task->time_to_execute = -1;
-	task->time_between_execution = -1;
-	task->uid = BAD_UID;
 
 	free(task); task = NULL;
 }

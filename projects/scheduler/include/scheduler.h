@@ -9,7 +9,7 @@
 #define ILRD_SCHEDULER_H
 
 #include <stddef.h> /* size_t */
-#include <UID.h>
+#include <UID.h> /*ilrd_uid_t*/
 
 typedef struct scheduler scheduler_t;
 

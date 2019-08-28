@@ -1,11 +1,22 @@
+/*******************************************************************************
+**** Author: Dor Tambour
+**** Last Update: 28/08/2019
+**** Reviewer: Nitzan
+**** Description: This file contains implementations of functions
+				  for the scheduler.
+				  The scheduler is a tool for handling tasks and run them on 
+				  the correct time. It uses priority queue as data structure tool
+				  handle the tasks.
+*******************************************************************************/
+
 #include <stdlib.h> /*malloc free*/
 #include <assert.h> /*assert*/
 #ifdef _WIN32
-#include <Windows.h> /*sleep*/
+#include <Windows.h> /* sleep for windows OS*/
 #else
-#include <unistd.h> /*sleep*/
+#include <unistd.h> /* sleep for linux OS*/
 #endif
-#include <time.h>
+#include <time.h> /* time */
 
 #include "scheduler.h" /*scheduler_t*/
 #include "priority_queue.h" /*pq_t*/
@@ -20,16 +31,16 @@ struct scheduler
 	pq_t *pq;
 	task_t *current_task;
 	int stop_alert;
+	int is_current_task_removed;
 };
-
-static int TimeCmpFunc(const void *task1, const void *task2, void *param)
+ 
+static int ExeTimeCmpFunc(const void *task1, const void *task2, void *param)
 {
 	task1 = (task_t *)task1;
 	task2 = (task_t *)task2;
 	UNUSED(param);
 
-	return (TaskGetTimeToExecution(task2) - TaskGetTimeToExecution(task1));
-
+	return (TaskGetTimeToExecution(task1) - TaskGetTimeToExecution(task2));
 }
 
 scheduler_t *SchedCreate(void)
@@ -49,6 +60,7 @@ scheduler_t *SchedCreate(void)
 
 	new_scheduler->current_task = NULL;
 	new_scheduler->stop_alert = 0;
+	new_scheduler->is_current_task_removed = 0;
 
 	return new_scheduler;
 }
@@ -66,8 +78,9 @@ void SchedDestroy(scheduler_t *sched)
 	free(sched); sched = NULL;
 }
 
-ilrd_uid_t SchedAddTask(scheduler_t *sched, action_func_t action_func, void *params,
-				   time_t exe_interval_in_seconds, time_t execution_start_time)
+ilrd_uid_t SchedAddTask(scheduler_t *sched, t_action_func_t action_func, 
+						void *params, time_t exe_interval_in_seconds, 
+						time_t execution_start_time)
 {
 	task_t *new_task = TaskCreate(action_func, params, exe_interval_in_seconds,
                                   execution_start_time);
@@ -78,15 +91,16 @@ ilrd_uid_t SchedAddTask(scheduler_t *sched, action_func_t action_func, void *par
 
 	assert(NULL != sched);
 
-	if (0 != PriorityQEnqueue(sched->pq, new_task))
+	if (PriorityQEnqueue(sched->pq, new_task) != 0)
 	{
+		TaskDestroy(new_task);
 		return BAD_UID;
 	}
 
 	return TaskGetUID(new_task);
 }
 
-static int TaskUidCompare(const void *data1, const void *data2)
+static int IsTaskUidSame(const void *data1, const void *data2)
 {
 	task_t *task1 = (task_t *)data1;
 	ilrd_uid_t *uid2 = (ilrd_uid_t *)data2;
@@ -94,15 +108,21 @@ static int TaskUidCompare(const void *data1, const void *data2)
 	return (UIDIsSame(TaskGetUID(task1), *uid2));
 }
 
-
 void SchedRemoveTask(scheduler_t *sched, ilrd_uid_t task_uid)
 {
-	task_t *task_to_free = NULL;
-
 	assert(NULL != sched);
 
-	task_to_free = PriorityQErase(sched->pq, &task_uid, TaskUidCompare);
-	TaskDestroy(task_to_free);
+	if (NULL != sched->current_task && 
+		UIDIsSame(task_uid, TaskGetUID(sched->current_task)))
+	{
+		sched->is_current_task_removed = 1;
+	}
+	else
+	{
+		task_t * task_to_free = PriorityQErase(sched->pq, &task_uid, 
+		                                       TaskUidCompare);
+		TaskDestroy(task_to_free); task_to_free = NULL;
+	}
 }
 
 size_t SchedSize(const scheduler_t *sched)
@@ -128,23 +148,32 @@ void SchedClear(scheduler_t *sched)
 		TaskDestroy((task_t *)PriorityQPeek(sched->pq));
 		PriorityQDequeue(sched->pq);
 	}
+
+	sched->is_current_task_removed = 1;
 }
 
 int SchedRun(scheduler_t *sched)
 {
 	assert(NULL != sched);
 
-	while (SchedIsEmpty(sched) == sched->stop_alert)
+	while (!SchedIsEmpty(sched) && !sched->stop_alert)
 	{
 		time_t time_till_execute = 0;
 		sched->current_task = (task_t *)(PriorityQPeek(sched->pq));
 		time_till_execute = TaskGetTimeToExecution(sched->current_task) - 
 							time(NULL);
-		sleep(time_till_execute);
+		while (time_till_execute)
+		{
+			time_till_execute = sleep(time_till_execute);
+		}
+
 		PriorityQDequeue(sched->pq);
-		if (TaskExecute(sched->current_task) == REPEAT)
+
+		if (TaskExecute(sched->current_task) == REPEAT && 
+			!sched->is_current_task_removed)
 		{
 			TaskUpdateTimeToExecute(sched->current_task);
+
 			if (PriorityQEnqueue(sched->pq, sched->current_task) != 0)
 			{
 				return RUN_STOPPED_ON_FAILURE;
@@ -152,7 +181,8 @@ int SchedRun(scheduler_t *sched)
 		}
 		else
 		{
-			TaskDestroy(sched->current_task);
+			TaskDestroy(sched->current_task); sched->current_task = NULL;
+			sched->is_current_task_removed = 0;
 		}
 	}
 
@@ -161,5 +191,7 @@ int SchedRun(scheduler_t *sched)
 
 void SchedStop(scheduler_t *sched)
 {
+	assert(NULL != sched);
+
 	sched->stop_alert = 1;
 }
