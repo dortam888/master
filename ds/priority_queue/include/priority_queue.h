@@ -112,7 +112,7 @@ void PriorityQClear(pq_t *pq);
 ##############################################################################*/
 typedef int (*is_match_t)(const void *element, const void* data_to_erase);
 
-void PriorityQErase(pq_t *pq, 
+void *PriorityQErase(pq_t *pq, 
 					void *data_to_erase,
 					is_match_t is_match);
 

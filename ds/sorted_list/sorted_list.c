@@ -117,11 +117,14 @@ sorted_list_iter_t SortedListInsert(sorted_list_t *sorted_list, void *data)
 {
 	sorted_list_iter_t i = {NULL};
 	sorted_list_iter_t inserted_node = {NULL};
+	sorted_list_iter_t end_list = {NULL};
 
 	assert(NULL != sorted_list);
- 
+
+	end_list = SortedListEnd(sorted_list);
+
 	for (i = SortedListBegin(sorted_list);
-		 !SortedListIsSameIter(i, SortedListEnd(sorted_list)) &&
+		 !SortedListIsSameIter(i, end_list) &&
 		 !sorted_list->is_before(SortedListGetData(i), 
 								 data, sorted_list->param_is_before);
 		 i = SortedListIterNext(i))

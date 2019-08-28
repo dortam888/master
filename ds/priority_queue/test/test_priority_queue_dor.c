@@ -207,7 +207,7 @@ static int NamesCompare(const void *data1, const void *data2)
 {
 	vip_members_t *vip_member = (vip_members_t *)data2;
 
-	return (strcmp(vip_member->name, data1));
+	return (0 == strcmp(vip_member->name, data1));
 }
 
 static void TestErase()
