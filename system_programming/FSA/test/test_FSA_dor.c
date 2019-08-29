@@ -106,10 +106,23 @@ static void TestFlowFSA()
 	var[6] = FSAAlloc(new_fsa);
 	var[7] = FSAAlloc(new_fsa);
 
-	if (FSACountFree(new_fsa) != 0)
+	if (FSACountFree(new_fsa) != )
 	{
 		printf("FSACountFree gave %lu\n",FSACountFree(new_fsa));
 		FAIL("CountFree Should be 0 after full it");
+		++error_counter;
+	}
+
+	FSAFree(var[0]);
+	FSAFree(var[2]);
+	FSAFree(var[4]);
+	FSAFree(var[6]);
+	FSAFree(var[1]);
+
+	if (FSACountFree(new_fsa) != 2)
+	{
+		printf("FSACountFree gave %lu\n",FSACountFree(new_fsa));
+		FAIL("CountFree Should be 2 after two frees");
 		++error_counter;
 	}
 
@@ -120,7 +133,6 @@ static void TestFlowFSA()
 		PASS("FSA works");
 	}
 }
-
 
 int main()
 {
