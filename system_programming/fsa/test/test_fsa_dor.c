@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "FSA.h"
+#include "fsa.h"
 
 #define PASS(str) printf("\033[0;32m%s\033[0m\n", str)
 #define FAIL(str) printf("\033[0;31m%s\033[0m in line %d\n", str, __LINE__)

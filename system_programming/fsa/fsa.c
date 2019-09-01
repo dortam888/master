@@ -8,13 +8,12 @@
 *******************************************************************************/
 
 #include <assert.h> /* assert */
-#include <limits.h> /* ULONG_MAX */
 
-#include "FSA.h" /*fsa_t*/
+#include "fsa.h" /*fsa_t*/
 
 #define WORDSIZE sizeof(size_t)
-#define ALLIGN(x) (x) + ((WORDSIZE - (x) % WORDSIZE) % WORDSIZE)
-#define DEADPOOL (ULONG_MAX)
+#define ALIGN(x) (x) + ((WORDSIZE - (x) % WORDSIZE) % WORDSIZE)
+#define DEADPOOL 0xDEAD9001
 
 struct fsa
 {
@@ -43,20 +42,20 @@ static void Swap(size_t *adress1, size_t *adress2)
 fsa_t *FSAInit(void *memory, size_t memory_size, size_t block_size)
 {
 	fsa_t *new_fsa = memory;
-	size_t real_block_size = sizeof(*new_fsa) + ALLIGN(block_size);
+	size_t real_block_size = sizeof(*new_fsa) + ALIGN(block_size);
 	size_t number_of_blocks = 0;
 	size_t i = 0;
 
 	assert(NULL != memory);
 
-	number_of_blocks = memory_size / real_block_size;
+	number_of_blocks = (memory_size - sizeof(*new_fsa))/ real_block_size;
 	new_fsa->next_free_block = sizeof(*new_fsa);
 	memory = (char *)memory + new_fsa->next_free_block;
 
 	for (i = 1; i < number_of_blocks; ++i) /*except from last block*/
 	{
 		((block_head_t *)memory)->head = new_fsa->next_free_block + 
-										   real_block_size * i;
+										 real_block_size * i;
 		memory = (char *)memory + real_block_size;
 	}
 
@@ -88,34 +87,26 @@ void *FSAAlloc(fsa_t *fsa)
 void FSAFree(void *adress_to_free)
 {
 	fsa_t *fsa = NULL;
+	block_head_t *start_of_block = NULL;
 
 	if (NULL == adress_to_free)
 	{
 		return;
 	}
 
-	fsa = (fsa_t *)((size_t)adress_to_free - 
-					((block_head_t *)adress_to_free - 1)->head - sizeof(*fsa));
-	Swap(&(fsa->next_free_block), 
-		 &(((block_head_t *)adress_to_free - 1)->head));
+	start_of_block = (block_head_t *)adress_to_free - 1;
+	fsa = (fsa_t *)((size_t)adress_to_free - start_of_block->head - 
+					 sizeof(*fsa));
+	Swap(&(fsa->next_free_block), &(start_of_block->head));
 }
 
 /****************************FSACountFree**********************************/
 size_t FSACountFree(const fsa_t *fsa)
 {
 	size_t counter = 0;
-	const block_head_t *next_free_block_head = NULL;
+	const block_head_t *next_free_block_head = (block_head_t *)fsa;
 
 	assert(NULL != fsa);
-
-	if (DEADPOOL == fsa->next_free_block)
-	{
-		return 0;
-	}
-
-	next_free_block_head = (const block_head_t *)((const char *)fsa + 
-												   fsa->next_free_block);
-	++counter; /* should count first block */
 
 	while (DEADPOOL != next_free_block_head->head)
 	{
@@ -130,8 +121,8 @@ size_t FSACountFree(const fsa_t *fsa)
 /****************************FSASuggestSize**********************************/
 size_t FSASuggestSize(size_t number_of_blocks, size_t block_size)
 {
-	size_t real_block_size = WORDSIZE + ALLIGN(block_size);
+	size_t real_block_size = sizeof(block_head_t) + ALIGN(block_size);
 
-	return number_of_blocks * (real_block_size) + sizeof(fsa_t);
+	return number_of_blocks * real_block_size + sizeof(fsa_t);
 }
 
