@@ -54,32 +54,32 @@ vsa_t *VSAInit(void *memory, size_t memory_size)
 
 static block_header_t *MoveToNextBlock(block_header_t *block)
 {
-	block = (block_header_t *)(char *)block + sizeof(*block) +
-							   ABS(block->block_size);
+	block = (block_header_t *)((char *)block + sizeof(*block) +
+							   ABS(block->block_size));
 	return block;
 }
 
-static block_header_t *FindNextAvailableBlock(block_header_t *block, char *end)
+static block_header_t *FindNextAvailableBlock(block_header_t *block, size_t block_size, char *end)
 {
 	while (((char *)block + block->block_size) < end)
 	{
-		static size_t defrag = 0;
-		static size_t last_block_size = 0;
+		static size_t defrag;
+		static size_t last_block_size;
 
-		if (block->block_size >= (long)block_size)
+		if (block->block_size >= (long)(block_size + sizeof(*block)))
 		{
 			break;
 		}
-		else if (next_block->block_size > 0)
+		else if (block->block_size > 0)
 		{
 			++defrag;
 			if (defrag > 1)
 			{
 				block_header_t *last_block = (block_header_t *)((char *)block - 
 											  last_block_size);
-				last_block->block_size += next_block->block_size;
-				next_block = last_block;
-				return FindNextAvailableBlock(block, end);
+				last_block->block_size += block->block_size;
+				block = last_block;
+				return FindNextAvailableBlock(block, block_size, end);
 			}
 		}
 		else
@@ -87,8 +87,8 @@ static block_header_t *FindNextAvailableBlock(block_header_t *block, char *end)
 			defrag = 0;
 		}
 
-		last_block_size = next_block->block_size + sizeof(*next_block);
-		next_block = MoveToNextBlock(next_block);
+		last_block_size = block->block_size + sizeof(*block);
+		block = MoveToNextBlock(block);
 	}
 
 	return NULL;
@@ -103,7 +103,8 @@ void *VSAAlloc(vsa_t *vsa, size_t block_size)
 
 	next_block = &(vsa->block_head);
 
-	next_block = FindNextAvailableBlock(next_block, vsa->end_of_memory);
+	next_block = FindNextAvailableBlock(next_block, block_size, 
+										vsa->end_of_memory);
 
 	if (NULL == next_block)
 	{
@@ -112,7 +113,7 @@ void *VSAAlloc(vsa_t *vsa, size_t block_size)
 
 	InitBlock(next_block, -aligned_size);
 
-	next_block = MoveToNextBlock(next_block);
+	/*next_block = MoveToNextBlock(next_block);*/
 
 	return next_block + 1;
 }
@@ -135,16 +136,16 @@ void VSAFree(void *address_to_free)
 size_t VSABiggestChunkAvailable(const vsa_t *vsa)
 {
 	long max_available_chunk = 0;
-	block_header_t next_block;
+	block_header_t *next_block = NULL;
 
 	assert(NULL != vsa);
 
-	next_block = vsa->block_head;
+	next_block = (block_header_t *)((const char *)vsa + offsetof(vsa_t, block_head));
 
-	while ((char *)(&next_block) < vsa->end_of_memory)
+	while ((char *)(next_block) < vsa->end_of_memory)
 	{
-		max_available_chunk = MAX(max_available_chunk, next_block.block_size);
-		next_block = *(MoveToNextBlock(&next_block));
+		max_available_chunk = MAX(max_available_chunk, next_block->block_size);
+		next_block = MoveToNextBlock(next_block);
 	}
 
 	return (size_t)max_available_chunk;
