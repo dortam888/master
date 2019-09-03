@@ -8,46 +8,55 @@
 static void TestVSAFlow1()
 {
 	void *memory_pool = NULL;
-	size_t memory_size = 168;
+	size_t memory_size = 152;
 	vsa_t *new_vsa = NULL;
 	size_t error_counter = 0;
 	void *freeme[3] = {NULL};
-	/*void *should_be_null = NULL;*/
+	void *should_be_null = NULL;
 
 	memory_pool = malloc(memory_size);
 	new_vsa = VSAInit(memory_pool, memory_size);
 
-	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 40))
+	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 24))
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 128");
+		FAIL("Biggest chunk should be 104");
 		++error_counter;
 	}
 
     freeme[0] = VSAAlloc(new_vsa, 15);
 
-	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 72))
+	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 24 - 32))
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 96");
+		FAIL("Biggest chunk should be 72");
 		++error_counter;
 	}
 	
 	freeme[1] = VSAAlloc(new_vsa, 9);
 	
-	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 72 - 32))
+	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 24 - 64))
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 64");
+		FAIL("Biggest chunk should be 40");
 		++error_counter;
 	}
 	
-	freeme[2] = VSAAlloc(new_vsa, 46);
+	freeme[2] = VSAAlloc(new_vsa, 45);
 	
 	if (VSABiggestChunkAvailable(new_vsa) != 0)
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
 		FAIL("Biggest chunk should be 0");
+		++error_counter;
+	}
+	
+	should_be_null = VSAAlloc(new_vsa, 2);
+	
+	if (NULL != should_be_null)
+	{
+		printf("should_be_null is %p\n", should_be_null);
+		FAIL("shouln't be allocated");
 		++error_counter;
 	}
 
@@ -62,10 +71,10 @@ static void TestVSAFlow1()
 
 	VSAFree(freeme[2]);
 
-	if (VSABiggestChunkAvailable(new_vsa) != 48)
+	if (VSABiggestChunkAvailable(new_vsa) != 80)
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 16");
+		FAIL("Biggest chunk should be 80");
 		++error_counter;
 	}
 	
@@ -177,6 +186,6 @@ int main()
 {
 	TestVSAFlow1();
 	TestVSAFlow2();
-	/*TestVSAFlow3();*/
+	TestVSAFlow3();
     return 0;
 }
