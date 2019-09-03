@@ -20,7 +20,7 @@ static void TestVSAFlow1()
 	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 24))
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 104");
+		FAIL("Biggest chunk should be 128");
 		++error_counter;
 	}
 
@@ -29,7 +29,7 @@ static void TestVSAFlow1()
 	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 24 - 32))
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 72");
+		FAIL("Biggest chunk should be 96");
 		++error_counter;
 	}
 	
@@ -38,7 +38,7 @@ static void TestVSAFlow1()
 	if (VSABiggestChunkAvailable(new_vsa) != (memory_size - 24 - 64))
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 40");
+		FAIL("Biggest chunk should be 64");
 		++error_counter;
 	}
 	
