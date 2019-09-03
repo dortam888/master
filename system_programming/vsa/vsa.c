@@ -13,6 +13,7 @@
 
 #define WORDSIZE sizeof(size_t)
 #define ALIGN(x) (x) + ((WORDSIZE - (x) % WORDSIZE) % WORDSIZE)
+#define ALIGN_BACK(x,y) (x) - (x) % (y)
 #define MAX(a,b) ((a > b) ? (a) : (b))
 #define ABS(x) ((x > 0)? (x) : (-x))
 
@@ -23,6 +24,7 @@ typedef struct block_header
 	#ifndef NDEBUG
 	long magic_number;
 	#endif
+
 }block_header_t;
 
 struct vsa
@@ -34,26 +36,30 @@ struct vsa
 static void InitBlock(block_header_t *block, long block_size)
 {
 	block->block_size = block_size;
+	
 	#ifndef NDEBUG
 	block->magic_number = 0x900DB10C;
-	#endif
+	#endif 
 }
 
 vsa_t *VSAInit(void *memory, size_t memory_size)
 {
 	vsa_t *new_vsa = memory;
+	size_t aligned_memory = ALIGN_BACK(memory_size - sizeof(*new_vsa), 
+	                        offsetof(vsa_t, block_head)) + sizeof(*new_vsa);
 
 	assert(NULL != memory);
 
-	new_vsa->end_of_memory = (char *)memory + memory_size;
+	new_vsa->end_of_memory = (char *)memory + aligned_memory;
 
-	InitBlock(&(new_vsa->block_head), memory_size - sizeof(*new_vsa));
+	InitBlock(&(new_vsa->block_head), aligned_memory - sizeof(*new_vsa));
 
 	return new_vsa;
 }
 
 static block_header_t *MoveToNextBlock(block_header_t *block)
 {
+    assert(NULL != block);
 	block = (block_header_t *)((char *)block + sizeof(*block) +
 							   ABS(block->block_size));
 	return block;
@@ -62,8 +68,10 @@ static block_header_t *MoveToNextBlock(block_header_t *block)
 static block_header_t *Defragment(block_header_t *block, 
 								  size_t last_block_size)
 {
-	block_header_t *last_block = (block_header_t *)((char *)block - 
-								  sizeof(*block) - last_block_size);
+	block_header_t *last_block = NULL;
+    assert(NULL != block);
+    last_block = (block_header_t *)((char *)block - sizeof(*block) - 
+                                    last_block_size);
     last_block->block_size += block->block_size + sizeof(*block);
     
     return last_block;
@@ -72,8 +80,9 @@ static block_header_t *Defragment(block_header_t *block,
 static block_header_t *FindNextAvailableBlock(block_header_t *block, 
                                               size_t block_size, char *end)
 {
-    while (((char *)block + sizeof(*block) + ABS(block->block_size)) <= end
-    		&& block->block_size != 0)
+    assert(NULL != block);
+    
+    while ((char *)block + sizeof(*block) < end)
     {
         static size_t defrag;
         static size_t last_block_size;
@@ -112,7 +121,7 @@ void *VSAAlloc(vsa_t *vsa, size_t block_size)
 
     assert(NULL != vsa);
 
-    next_block = (block_header_t *)((const char *)vsa + 
+    next_block = (block_header_t *)((char *)vsa + 
                   offsetof(vsa_t, block_head));
 
     next_block = FindNextAvailableBlock(next_block, aligned_size, 
@@ -135,10 +144,7 @@ void *VSAAlloc(vsa_t *vsa, size_t block_size)
         InitBlock(new_block_header, old_block_size - aligned_size - 
                                     sizeof(*new_block_header));
     }
-    else
-    {
-        new_block_header->block_size = 0;
-    }
+
 
     return next_block + 1;
 }
@@ -155,7 +161,7 @@ size_t VSABiggestChunkAvailable(const vsa_t *vsa)
     next_block = (block_header_t *)((const char *)vsa + 
                   offsetof(vsa_t, block_head));
 
-    while ((char *)(next_block) < vsa->end_of_memory)
+    while ((char *)(next_block) + sizeof(*next_block) < vsa->end_of_memory)
     {
         if (next_block->block_size > 0)
         {

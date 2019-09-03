@@ -17,7 +17,7 @@ static void TestVSAFlow1()
 	memory_pool = malloc(memory_size);
 	new_vsa = VSAInit(memory_pool, memory_size);
 
-	if (VSABiggestChunkAvailable(new_vsa) != 128)
+	if (VSABiggestChunkAvailable(new_vsa) != 136)
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
 		FAIL("Biggest chunk should be 128");
@@ -26,7 +26,7 @@ static void TestVSAFlow1()
 
     freeme[0] = VSAAlloc(new_vsa, 15);
 
-	if (VSABiggestChunkAvailable(new_vsa) != 96)
+	if (VSABiggestChunkAvailable(new_vsa) != 112)
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
 		FAIL("Biggest chunk should be 96");
@@ -35,14 +35,14 @@ static void TestVSAFlow1()
 	
 	freeme[1] = VSAAlloc(new_vsa, 9);
 	
-	if (VSABiggestChunkAvailable(new_vsa) != 64)
+	if (VSABiggestChunkAvailable(new_vsa) != 88)
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
 		FAIL("Biggest chunk should be 64");
 		++error_counter;
 	}
 	
-	freeme[2] = VSAAlloc(new_vsa, 45);
+	freeme[2] = VSAAlloc(new_vsa, 88);
 	
 	if (VSABiggestChunkAvailable(new_vsa) != 0)
 	{
@@ -71,7 +71,7 @@ static void TestVSAFlow1()
 
 	VSAFree(freeme[2]);
 
-	if (VSABiggestChunkAvailable(new_vsa) != 80)
+	if (VSABiggestChunkAvailable(new_vsa) != 112)
 	{
 		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
 		FAIL("Biggest chunk should be 80");
@@ -95,19 +95,20 @@ static void TestVSAFlow2()
 	vsa_t *new_vsa = NULL;
 	size_t error_counter = 0;
 	size_t i = 0;
-	void *freeme[5] = {NULL};
+	void *freeme[20] = {NULL};
 
 	memory_pool = malloc(memory_size);
 	new_vsa = VSAInit(memory_pool, memory_size);
 	
-	for (i = 0; i < 5; ++i)
+	while (VSABiggestChunkAvailable(new_vsa) != 0)
 	{
 	    freeme[i] = VSAAlloc(new_vsa, 14);
+	    ++i;
 	}
-	
-	if(NULL != freeme[4])
+
+	if(NULL != freeme[6])
 	{
-	    printf("pointer is %p", freeme[4]);
+	    printf("pointer is %p", freeme[6]);
 	    FAIL("shouldn't be allocated");
 	    ++error_counter;
 	}
@@ -115,20 +116,13 @@ static void TestVSAFlow2()
 	VSAFree(freeme[1]);
 	VSAFree(freeme[2]);
 
-    freeme[4] = VSAAlloc(new_vsa, 32);
+    freeme[19] = VSAAlloc(new_vsa, 40);
 
-	if(NULL == freeme[4])
+	if(NULL == freeme[19])
 	{
-	    printf("pointer is %p", freeme[4]);
+	    printf("pointer is %p", freeme[19]);
 	    FAIL("should be allocated");
 	    ++error_counter;
-	}
-
-	if (VSABiggestChunkAvailable(new_vsa) != 0)
-	{
-		printf("biggest chunk got is %lu\n", VSABiggestChunkAvailable(new_vsa));
-		FAIL("Biggest chunk should be 0 difrag not work");
-		++error_counter;
 	}
 
     free(memory_pool);
@@ -146,29 +140,29 @@ static void TestVSAFlow3()
 	vsa_t *new_vsa = NULL;
 	size_t error_counter = 0;
 	size_t i = 0;
-	char *freeme[5] = {NULL};
+	char *freeme[20] = {NULL};
 
 	memory_pool = malloc(memory_size);
 	new_vsa = VSAInit(memory_pool, memory_size);
 	
-	for (i = 0; i < 5; ++i)
+	while (VSABiggestChunkAvailable(new_vsa) != 0)
 	{
 	    freeme[i] = VSAAlloc(new_vsa, 14);
+	    ++i;
 	}
 	
-	if(NULL != freeme[4])
+	if(NULL != freeme[6])
 	{
 	    printf("pointer is %p", freeme[4]);
 	    FAIL("shouldn't be allocated");
 	    ++error_counter;
 	}
-	
 
-    freeme[4] = VSAAlloc(new_vsa, 32);
-
-	if(NULL != freeme[4])
+    freeme[19] = VSAAlloc(new_vsa, 32);
+    
+	if(NULL != freeme[19])
 	{
-	    printf("pointer is %p", freeme[4]);
+	    printf("pointer is %p", freeme[19]);
 	    FAIL("should be allocated");
 	    ++error_counter;
 	}
