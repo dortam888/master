@@ -106,7 +106,7 @@ static void TestFlowFSA()
 	var[6] = FSAAlloc(new_fsa);
 	var[7] = FSAAlloc(new_fsa);
 
-	if (FSACountFree(new_fsa) != )
+	if (FSACountFree(new_fsa) != 0)
 	{
 		printf("FSACountFree gave %lu\n",FSACountFree(new_fsa));
 		FAIL("CountFree Should be 0 after full it");

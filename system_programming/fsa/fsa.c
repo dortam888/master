@@ -17,12 +17,12 @@
 
 struct fsa
 {
-	size_t next_free_block;
+	size_t offset_to_next_free_block;
 };
 
 typedef struct block_head
 {
-	size_t head;
+	size_t offset_to_next_free_block_if_alloced_or_fsa_if_free;
 }block_head_t;
 
 /****************************SWAP**********************************/
@@ -38,28 +38,45 @@ static void Swap(size_t *adress1, size_t *adress2)
 	*adress2 = tmp;
 }
 
+static size_t CalcNumOfBlocks(size_t memory_size, size_t block_size)
+{
+    return (memory_size - sizeof(fsa_t)) / block_size;
+}
+
+static block_head_t *MoveToFirstBlockHead(fsa_t *memory)
+{
+    return (block_head_t *)((char *)memory + memory->offset_to_next_free_block);
+}
+
+static block_head_t *MoveToNextBlockHead(block_head_t *memory, 
+                                         size_t block_size)
+{
+    return (block_head_t *)((char *)memory + block_size);
+}
+
 /****************************FSAInit**********************************/
 fsa_t *FSAInit(void *memory, size_t memory_size, size_t block_size)
 {
 	fsa_t *new_fsa = memory;
+	block_head_t *block_head = memory;
 	size_t real_block_size = sizeof(*new_fsa) + ALIGN(block_size);
 	size_t number_of_blocks = 0;
 	size_t i = 0;
 
 	assert(NULL != memory);
 
-	number_of_blocks = (memory_size - sizeof(*new_fsa))/ real_block_size;
-	new_fsa->next_free_block = sizeof(*new_fsa);
-	memory = (char *)memory + new_fsa->next_free_block;
+	number_of_blocks = CalcNumOfBlocks(memory_size, real_block_size);
+	new_fsa->offset_to_next_free_block = sizeof(*new_fsa);
+	block_head = MoveToFirstBlockHead(memory);
 
 	for (i = 1; i < number_of_blocks; ++i) /*except from last block*/
 	{
-		((block_head_t *)memory)->head = new_fsa->next_free_block + 
-										 real_block_size * i;
-		memory = (char *)memory + real_block_size;
+		block_head->offset_to_next_free_block_if_alloced_or_fsa_if_free = 
+		new_fsa->offset_to_next_free_block + real_block_size * i;
+		block_head = MoveToNextBlockHead(block_head, real_block_size);
 	}
 
-	((block_head_t *)memory)->head = DEADPOOL; /* last block initialized with DEADPOOL */
+	block_head->offset_to_next_free_block_if_alloced_or_fsa_if_free = DEADPOOL; /* last block initialized with DEADPOOL */
 
 	return new_fsa;
 }
@@ -71,33 +88,35 @@ void *FSAAlloc(fsa_t *fsa)
 
 	assert(NULL != fsa);
 
-	if (DEADPOOL == fsa->next_free_block)
+	if (DEADPOOL == fsa->offset_to_next_free_block)
 	{
 		return NULL;
 	}
 
-	next_free_block_head = (block_head_t *)((char *)fsa + 
-											fsa->next_free_block);
-	Swap(&(next_free_block_head->head), &(fsa->next_free_block));
+	next_free_block_head = MoveToFirstBlockHead(fsa);
+	Swap(&(next_free_block_head->offset_to_next_free_block_if_alloced_or_fsa_if_free), 
+	     &(fsa->offset_to_next_free_block));
 
-	return (char *)next_free_block_head + sizeof(*next_free_block_head);
+	return next_free_block_head + 1;
 }
 
 /****************************FSAFree**********************************/
 void FSAFree(void *adress_to_free)
 {
 	fsa_t *fsa = NULL;
-	block_head_t *start_of_block = NULL;
+	block_head_t *start_of_block_to_free = NULL;
 
 	if (NULL == adress_to_free)
 	{
 		return;
 	}
 
-	start_of_block = (block_head_t *)adress_to_free - 1;
-	fsa = (fsa_t *)((size_t)adress_to_free - start_of_block->head - 
-					 sizeof(*fsa));
-	Swap(&(fsa->next_free_block), &(start_of_block->head));
+	start_of_block_to_free = (block_head_t *)adress_to_free - 1;
+	fsa = (fsa_t *)((size_t)adress_to_free - 
+	start_of_block_to_free->offset_to_next_free_block_if_alloced_or_fsa_if_free - 
+	sizeof(*fsa));
+	Swap(&(fsa->offset_to_next_free_block), 
+	     &(start_of_block_to_free->offset_to_next_free_block_if_alloced_or_fsa_if_free));
 }
 
 /****************************FSACountFree**********************************/
@@ -108,11 +127,11 @@ size_t FSACountFree(const fsa_t *fsa)
 
 	assert(NULL != fsa);
 
-	while (DEADPOOL != next_free_block_head->head)
+	while (DEADPOOL != next_free_block_head->offset_to_next_free_block_if_alloced_or_fsa_if_free)
 	{
 		++counter;
 		next_free_block_head = (const block_head_t *)((const char *)fsa + 
-								next_free_block_head->head);
+								next_free_block_head->offset_to_next_free_block_if_alloced_or_fsa_if_free);
 	}
 
 	return counter;
