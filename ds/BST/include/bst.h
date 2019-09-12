@@ -24,7 +24,7 @@ typedef struct bst_node * bst_iter_t;
  * Return: pointer to new binary search tree
  * Errors: if memory allocation failed, return NULL
  */
-bst_t *BSTCreate(int (*cmp_func)(const void *iter_data, const void *new_data, void *param), 
+bst_t *BSTCreate(int (*cmp_func)(void *iter_data, void *new_data, void *param), 
 				 void *param);
 
 /*
@@ -86,7 +86,7 @@ int BSTForEach(void *param, bst_iter_t from, bst_iter_t to,
  * Param  @bst - binary search tree to search
  * Param  @data - data to find
  * Return : iter to found iter
- * Errors : if <data> was not found, return NULL
+ * Errors : if <data> was not found, return END
  */
 bst_iter_t BSTFind(bst_t *bst, void *data_to_find);
 
