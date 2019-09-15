@@ -1,7 +1,7 @@
 /*******************************************************************************
  **** Author: Dor Tambour                                                      *
  **** Last Update: Tuesday September 10 2019 02:04:39                          *
- **** Reviewer:                                                                *
+ **** Reviewer: dandan                                                         *
  **** Description: This file contains the implementations of functions         *
  *                                for the data structure BST.                  *
  *                                Look at BST.h for more information about the *
@@ -9,7 +9,6 @@
 *******************************************************************************/
 #include <stdlib.h> /*malloc free*/
 #include <assert.h> /* assert */
-#include <limits.h> /* LONG_MAX LONG_MIN */
 
 #include "bst.h"
 
@@ -17,6 +16,7 @@ typedef int(*cmp_func_t)(void *iter_data, void *new_data,
                          void *param);
 
 enum child_direction {LEFT, RIGHT};
+enum {BEGIN, ROOT};
 
 struct bst_node
 {
@@ -33,6 +33,84 @@ struct bst
     /*dummy node has the minimum on the left child, the 
     root at the right child, and himself as parent*/
 };
+
+/************************InitBSTIter()***************************************/
+static bst_iter_t InitBSTIter()
+{
+    return NULL;
+}
+
+/************************BSTInvalidPointer************************************/
+/*iterator of no node for example child of leaves*/
+static bst_iter_t InvalidIter() 
+{
+    return (bst_iter_t)(0xDEADC0DE);
+}
+
+/************************GetNodeFromIter**************************************/
+static struct bst_node *GetNodeFromIter(bst_iter_t iter)
+{
+    return iter; /*currently iter is just pointer to node*/
+}
+
+/************************GetNodeFromIter**************************************/
+static bst_iter_t FreeIter(bst_iter_t iter)
+{
+    struct bst_node *node_to_free = GetNodeFromIter(iter);
+
+    free(node_to_free); node_to_free = NULL;
+
+    return InvalidIter();
+}
+
+/************************BSTBegin & BSTEnd Functions***************************/
+bst_iter_t BSTBegin(const bst_t *bst)
+{
+    assert(NULL != bst);
+
+    return bst->dummy_node->child[BEGIN];
+}
+
+bst_iter_t BSTEnd(const bst_t *bst)
+{
+    assert(NULL != bst);
+
+    return bst->dummy_node;
+}
+
+/************************BSTMoveToChild***************************************/
+static bst_iter_t BSTMoveToChild(bst_iter_t iter, 
+                                 enum child_direction direction)
+{
+    return GetNodeFromIter(iter)->child[direction];
+}
+
+/************************BSTGetParent*****************************************/
+static bst_iter_t BSTGetParent(bst_iter_t iter)
+{
+    return GetNodeFromIter(iter)->parent;
+}
+
+/****************IsDummy******************************************************/
+static int IsDummy(bst_iter_t iter)
+{
+    return BSTIsSameIter(iter, BSTGetParent(iter));
+}
+
+/************************BranchIsEmpty**********for insert and find functions*/
+static int BranchIsEmpty(bst_iter_t iter, enum child_direction direction)
+{
+    return (BSTMoveToChild(iter, direction) == InvalidIter());
+}
+
+/************************BSTGetRoot Function***********************************/
+static bst_iter_t BSTGetRoot(const bst_t *bst) /*for insert and find functions*/
+{
+    assert(NULL != bst);
+    assert(NULL != bst->dummy_node);
+
+    return bst->dummy_node->child[ROOT];
+}
 
 /************************BSTCreate Function************************************/
 static struct bst_node *CreateNode(void *data, 
@@ -73,61 +151,46 @@ bst_t *BSTCreate(cmp_func_t cmp_func, void *params)
         return NULL;
     }
 
-    new_bst->dummy_node->child[LEFT] = new_bst->dummy_node;
+    new_bst->dummy_node->child[BEGIN] = new_bst->dummy_node;
+    new_bst->dummy_node->child[ROOT] = GetNodeFromIter(InvalidIter());
     new_bst->dummy_node->parent = new_bst->dummy_node;
 
     return new_bst;
-}
-
-/************************BranchIsEmpty**********for insert and find functions*/
-static int BranchIsEmpty(bst_iter_t iter, enum child_direction direction)
-{
-    return (iter->child[direction] == NULL);
-}
-
-/************************BSTMoveToChild**********for insert and find functions*/
-static bst_iter_t BSTMoveToChild(bst_iter_t iter, 
-                                 enum child_direction direction)
-{
-    return iter->child[direction];
-}
-
-
-/************************BSTGetRoot Function***********************************/
-static bst_iter_t BSTGetRoot(const bst_t *bst) /*for insert and find functions*/
-{
-    assert(NULL != bst);
-
-    return bst->dummy_node->child[RIGHT];
 }
 
 /************************BSTInsert Function************************************/
 bst_iter_t BSTInsert(bst_t *bst, void *data)
 {
     struct bst_node *new_node = NULL;
-    bst_iter_t iter = NULL;
+    bst_iter_t iter = InitBSTIter();
+    bst_iter_t invalid_iter = InvalidIter();
     struct bst_node *parent = NULL;
     enum child_direction direction = RIGHT;
 
     assert(NULL != bst);
 
     parent = bst->dummy_node;
-    new_node = CreateNode(data, NULL, NULL, NULL);
+    new_node = CreateNode(data, invalid_iter, invalid_iter, invalid_iter);
+    if (NULL == new_node)
+    {
+        return NULL;
+    }
 
     iter = BSTGetRoot(bst);
 
+    /* update begin if minimum changed (or if empty)*/
     if (BSTIsEmpty(bst))
     {
-        bst->dummy_node->child[LEFT] = new_node;
+        bst->dummy_node->child[BEGIN] = new_node;
     }
-    else if (bst->cmp_func(BSTGetData(bst->dummy_node->child[LEFT]), 
-             data, bst->params) > 0) /* update begin */
+    else if (bst->cmp_func(BSTGetData(BSTBegin(bst)), data, bst->params) > 0) 
     {
-        iter = bst->dummy_node->child[LEFT];
-        bst->dummy_node->child[LEFT] = new_node;
+        iter = BSTBegin(bst); /*move iter to minimum before update so insertion
+                                will be O(1) instead of O(Log(n))*/
+        bst->dummy_node->child[BEGIN] = new_node;
     }
 
-    for (; !BSTIsSameIter(iter, NULL); 
+    for (; !BSTIsSameIter(iter, invalid_iter); 
          iter = BSTMoveToChild(iter, direction))
     {
         parent = iter;
@@ -151,22 +214,23 @@ bst_iter_t BSTInsert(bst_t *bst, void *data)
 /************************BSTFind Function**************************************/
 bst_iter_t BSTFind(bst_t *bst, void *data_to_find)
 {
-    bst_iter_t iter = NULL;
-    bst_iter_t return_iter = NULL;
+    bst_iter_t iter = InitBSTIter();
+    bst_iter_t return_iter = InitBSTIter();
+    bst_iter_t invalid_iter = InvalidIter();
     enum child_direction direction = RIGHT;
 
     assert(NULL != bst);
-    
-    return_iter = NULL;
 
-    for (iter = BSTGetRoot(bst); !BSTIsSameIter(iter, NULL); 
+    for (iter = BSTGetRoot(bst); !BSTIsSameIter(iter, invalid_iter); 
          iter = BSTMoveToChild(iter, direction))
     {
-        if (bst->cmp_func(BSTGetData(iter), data_to_find, bst->params) < 0)
+        int cmp_func_result = 0;
+ 
+        if (cmp_func_result < 0)
         {
             direction = RIGHT;
         }
-        else if (bst->cmp_func(BSTGetData(iter), data_to_find, bst->params) > 0)
+        else if (cmp_func_result > 0)
         {
             direction = LEFT;
         }
@@ -199,32 +263,32 @@ static enum child_direction SwitchDirection(enum child_direction direction)
 static bst_iter_t NextNodeIfRightPrevNodeIfLeft(bst_iter_t iter, 
                                                 enum child_direction direction)
 {
-    bst_iter_t next_iter = NULL;
+    bst_iter_t next_iter = InitBSTIter();
     bst_iter_t prev_iter = iter;
 
     if (!BranchIsEmpty(iter, direction))
     {
-        next_iter = iter->child[direction];
+        next_iter = BSTMoveToChild(iter, direction);
         direction = SwitchDirection(direction);
 
         while (!BranchIsEmpty(next_iter, direction))
         {
-            next_iter = next_iter->child[direction];
+            next_iter = BSTMoveToChild(next_iter, direction);
         }
     }
     else
     {
-        next_iter = prev_iter->parent;
+        next_iter = BSTGetParent(prev_iter);
         
-        while(BSTIsSameIter(next_iter->child[direction], prev_iter) && 
-              !BSTIsSameIter(next_iter, next_iter->parent))
+        while(BSTIsSameIter(BSTMoveToChild(next_iter, direction), prev_iter) && 
+              !IsDummy(next_iter))
         {
             prev_iter = next_iter;
-            next_iter = prev_iter->parent;
+            next_iter = BSTGetParent(prev_iter);
         }
     }
 
-    return next_iter? next_iter : prev_iter;
+    return next_iter;
 }
 
 bst_iter_t BSTNext(bst_iter_t iter)
@@ -243,21 +307,6 @@ void *BSTGetData(bst_iter_t iter)
     return iter->data;
 }
 
-/************************BSTBegin & BSTEnd Functions***************************/
-bst_iter_t BSTBegin(const bst_t *bst)
-{
-    assert(NULL != bst);
-
-    return bst->dummy_node->child[LEFT];
-}
-
-bst_iter_t BSTEnd(const bst_t *bst)
-{
-    assert(NULL != bst);
-
-    return bst->dummy_node;
-}
-
 /**************************BSTIsSameIter Function******************************/
 int BSTIsSameIter(bst_iter_t iter1, bst_iter_t iter2)
 {
@@ -273,21 +322,21 @@ int BSTIsEmpty(const bst_t *bst)
 }
 
 /**************************BSTSize Functions***********************************/
-static void TraverseAndCount(bst_iter_t iter, size_t *param)
+static void TraverseAndCount(bst_iter_t iter, size_t *counter)
 {
-    if (iter == NULL)
+    if (BSTIsSameIter(iter,InvalidIter()))
     {
         return;
     }
 
-    TraverseAndCount(iter->child[LEFT], param);
-    ++(*param);
-    TraverseAndCount(iter->child[RIGHT], param);
+    TraverseAndCount(BSTMoveToChild(iter, LEFT), counter);
+    ++(*counter);
+    TraverseAndCount(BSTMoveToChild(iter, RIGHT), counter);
 }
 
 size_t BSTSize(const bst_t *bst)
 {
-    bst_iter_t iter = NULL;
+    bst_iter_t iter = InitBSTIter();
     size_t counter = 0;
 
     assert(NULL != bst);
@@ -302,19 +351,19 @@ size_t BSTSize(const bst_t *bst)
 /**************************BSTDestroy Functions********************************/
 static void DestroyNodes(bst_iter_t iter)
 {
-    if (iter == NULL)
+    if (BSTIsSameIter(iter,InvalidIter()))
     {
         return;
     }
 
-    DestroyNodes(iter->child[LEFT]);
-    DestroyNodes(iter->child[RIGHT]);
-    free(iter);
+    DestroyNodes(BSTMoveToChild(iter, LEFT));
+    DestroyNodes(BSTMoveToChild(iter, RIGHT));
+    iter = FreeIter(iter);
 }
 
 void BSTDestroy(bst_t *bst)
 {
-    bst_iter_t iter = NULL;
+    bst_iter_t iter = InitBSTIter();
 
     assert(NULL != bst);
 
@@ -347,15 +396,16 @@ int BSTForEach(void *params, bst_iter_t from, bst_iter_t to,
     return action_func_status;
 }
 
-/**************************BSTRemove Function**********************************/
+/**************************BSTRemove Functions**********************************/
 void BSTRemove(bst_iter_t iter_to_remove)
 {
     enum child_direction direction = LEFT;
-    bst_iter_t next_to_remove = BSTNext(iter_to_remove);
-    bst_iter_t prev_to_remove = BSTPrev(iter_to_remove);
+    struct bst_node *node_to_remove = GetNodeFromIter(iter_to_remove);
+    struct bst_node *next_to_remove = GetNodeFromIter(BSTNext(iter_to_remove));
+    struct bst_node *prev_to_remove = GetNodeFromIter(BSTPrev(iter_to_remove));
 
     /* checks parent of iter_to_remove direction */
-    if (BSTIsSameIter(iter_to_remove->parent->child[RIGHT], iter_to_remove))
+    if (node_to_remove->parent->child[RIGHT] == node_to_remove)
     {
         direction = RIGHT;
     }
@@ -364,27 +414,27 @@ void BSTRemove(bst_iter_t iter_to_remove)
         direction = LEFT;
     }
 
-    /*update begin if your prev is dummy*/
-    if (BSTIsSameIter(prev_to_remove->parent, prev_to_remove))
+    /*update begin if prev is dummy*/
+    if (IsDummy(prev_to_remove))
     {
-        prev_to_remove->child[LEFT] = next_to_remove;
+        prev_to_remove->child[BEGIN] = next_to_remove;
     }
 
-    /* connects between the parent of iter_to_remove and its right child*/
-    iter_to_remove->parent->child[direction] = iter_to_remove->child[RIGHT];
+    /* connects between the parent of node_to_remove and its right child*/
+    node_to_remove->parent->child[direction] = node_to_remove->child[RIGHT];
 
-    if (NULL != iter_to_remove->child[RIGHT])
+    if (!BSTIsSameIter(BSTMoveToChild(iter_to_remove, RIGHT), InvalidIter()))
     {
         iter_to_remove->child[RIGHT]->parent = iter_to_remove->parent;
     }
 
-    /* connects between the nextnode of iter_to_remove and its left child*/
-    if (NULL != iter_to_remove->child[LEFT])
+    /* connects between the next node of node_to_remove and its left child*/
+    if (!BSTIsSameIter(BSTMoveToChild(iter_to_remove, LEFT), InvalidIter()))
     {
-        next_to_remove->child[LEFT] = iter_to_remove->child[LEFT];
-        iter_to_remove->child[LEFT]->parent = next_to_remove;
+        next_to_remove->child[LEFT] = node_to_remove->child[LEFT];
+        node_to_remove->child[LEFT]->parent = next_to_remove;
     }
 
-    free(iter_to_remove); iter_to_remove = NULL;
+    iter_to_remove = FreeIter(iter_to_remove);
 }
 

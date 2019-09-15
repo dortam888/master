@@ -34,6 +34,12 @@ static void TestFlow1()
         FAIL("IsEmpty didn't work");
     }
     
+    if (!BSTIsSameIter(BSTBegin(new_bst), BSTEnd(new_bst)))
+    {
+        ++error_counter;
+        FAIL("Begin should be End");
+    }
+    
     if (BSTSize(new_bst) != 0)
     {
         ++error_counter;
@@ -171,7 +177,6 @@ static void TestFlowForEachFind()
         ++error_counter;
         FAIL("Find didn't work on not find");
     }
-
 
     BSTForEach(&param_to_function, BSTBegin(new_bst), iter[6], AddParamToData);
 
