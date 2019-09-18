@@ -28,20 +28,32 @@ typedef struct shunting_yard_stacks
 
 struct next_state_and_transition
 {
-	int(*action_func)(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
+	char*(*action_func)(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
 	calculator_state_t next_state;
 };
 
 typedef double(*operation_t)(double num1, double num2);
+typedef void(*do_operation_t)(s_y_stacks_t *stack, char *data);
+typedef void(*sign_t)(char *data);
 
-static int InvalidErrorFunc(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int PushToNumStack(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int SpaceMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int ParenthesMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int UnaryMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int CheckStackEmpty(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int ParenthesFold(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
-static int OperatorPush(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
+static char *InvalidErrorFunc(s_y_stacks_t *stack, char *data, 
+                              calc_errno_t *errno);
+static char *PushToNumStack(s_y_stacks_t *stack, char *data, 
+                            calc_errno_t *errno);
+static char *SpaceMoveToNext(s_y_stacks_t *stack, char *data, 
+                             calc_errno_t *errno);
+static char *ParenthesMoveToNext(s_y_stacks_t *stack, char *data, 
+                                 calc_errno_t *errno);
+static char *UnaryMoveToNext(s_y_stacks_t *stack, char *data, 
+                             calc_errno_t *errno);
+static char *CheckStackEmpty(s_y_stacks_t *stack, char *data, 
+                             calc_errno_t *errno);
+static char *ParenthesFold(s_y_stacks_t *stack, char *data, 
+                           calc_errno_t *errno);
+static char *OperatorPush(s_y_stacks_t *stack, char *data, calc_errno_t *errno);
+static void PushOperator(s_y_stacks_t *stack, char *data);
+static void FoldAndPush(s_y_stacks_t *stack, char *data);
+static void CheckPresendence(s_y_stacks_t *stack, char *data);
 static double Add(double num1, double num2);
 static double Substract(double num1, double num2);
 static double Multiply(double num1, double num2);
@@ -52,7 +64,8 @@ static double Power(double num1, double num2);
 static struct next_state_and_transition 
 							  transition_lut[NUMBER_OF_STATES][NUMBER_OF_CHARS];
 static size_t presendence_lut[NUMBER_OF_CHARS];
-static operation_t do_operation_lut[2];
+static do_operation_t do_operation_lut[2] = {FoldAndPush, PushOperator};
+static do_operation_t is_stack_empty_lut[2] = {CheckPresendence, PushOperator};
 static operation_t operation_lut[NUMBER_OF_CHARS];
 
 /*Operations*/
@@ -73,6 +86,11 @@ static double Multiply(double num1, double num2)
 
 static double Divide(double num1, double num2)
 {
+    if (0 == num1)
+    {
+        return 0xDEADDEAD;
+    }
+
 	return num2 / num1;
 }
 
@@ -89,7 +107,7 @@ static void InitiateWaitForNumberState()
 
 	transition_lut[WAIT_FOR_NUMBER]['\0'].action_func = InvalidErrorFunc;
 	transition_lut[WAIT_FOR_NUMBER]['\0'].next_state = ERROR;
-	
+
 	for (i = 1; i < 256; ++i)
 	{
 		transition_lut[WAIT_FOR_NUMBER][i].action_func = InvalidErrorFunc;
@@ -109,10 +127,10 @@ static void InitiateWaitForNumberState()
 	transition_lut[WAIT_FOR_NUMBER]['('].next_state = WAIT_FOR_NUMBER;
 
 	transition_lut[WAIT_FOR_NUMBER]['+'].action_func = UnaryMoveToNext;
-	transition_lut[WAIT_FOR_NUMBER]['+'].next_state = WAIT_FOR_NUMBER;
+	transition_lut[WAIT_FOR_NUMBER]['+'].next_state = WAIT_FOR_OPERATOR;
 
 	transition_lut[WAIT_FOR_NUMBER]['-'].action_func = UnaryMoveToNext;
-	transition_lut[WAIT_FOR_NUMBER]['-'].next_state = WAIT_FOR_NUMBER;
+	transition_lut[WAIT_FOR_NUMBER]['-'].next_state = WAIT_FOR_OPERATOR;
 }
 
 static void InitiateWaitForOperatorState()
@@ -130,6 +148,21 @@ static void InitiateWaitForOperatorState()
 
 	transition_lut[WAIT_FOR_OPERATOR][SPACE].action_func = SpaceMoveToNext;
 	transition_lut[WAIT_FOR_OPERATOR][SPACE].next_state = WAIT_FOR_OPERATOR;
+
+	transition_lut[WAIT_FOR_OPERATOR]['\t'].action_func = SpaceMoveToNext;
+	transition_lut[WAIT_FOR_OPERATOR]['\t'].next_state = WAIT_FOR_OPERATOR;
+
+	transition_lut[WAIT_FOR_OPERATOR]['\n'].action_func = SpaceMoveToNext;
+	transition_lut[WAIT_FOR_OPERATOR]['\n'].next_state = WAIT_FOR_OPERATOR;
+
+	transition_lut[WAIT_FOR_OPERATOR]['\v'].action_func = SpaceMoveToNext;
+	transition_lut[WAIT_FOR_OPERATOR]['\v'].next_state = WAIT_FOR_OPERATOR;
+
+	transition_lut[WAIT_FOR_OPERATOR]['\f'].action_func = SpaceMoveToNext;
+	transition_lut[WAIT_FOR_OPERATOR]['\f'].next_state = WAIT_FOR_OPERATOR;
+
+	transition_lut[WAIT_FOR_OPERATOR]['\r'].action_func = SpaceMoveToNext;
+	transition_lut[WAIT_FOR_OPERATOR]['\r'].next_state = WAIT_FOR_OPERATOR;
 
 	transition_lut[WAIT_FOR_OPERATOR][')'].action_func = ParenthesFold;
 	transition_lut[WAIT_FOR_OPERATOR][')'].next_state = WAIT_FOR_OPERATOR;
@@ -175,21 +208,28 @@ static void InitiateEndState()
 	}
 }
 
-static void InitOperationLut()
+static void InitOperationAndPresendenceLut()
 {
 	size_t i = 0;
 	
 	for (i = 0; i < 256; ++i)
 	{
 		operation_lut[i] = NULL;
+		presendence_lut[i] = 0;
 	}
 	
 	operation_lut['+'] = Add;
+	presendence_lut['+'] = 1;
 	operation_lut['-'] = Substract;
+	presendence_lut['-'] = 1;
 	operation_lut['*'] = Multiply;
+	presendence_lut['*'] = 2;
 	operation_lut['/'] = Divide;
+	presendence_lut['/'] = 2;
 	operation_lut[246] = Divide;
+	presendence_lut[246] = 2;
 	operation_lut['^'] = Power;
+	presendence_lut['^'] = 3;
 }
 
 static void InitLuts()
@@ -200,12 +240,12 @@ static void InitLuts()
 	InitiateErrorState();
 	InitiateEndState();
 
-	InitOperationLut();
+	InitOperationAndPresendenceLut();
 }
 
-static size_t ComputePresendence(char *operator)
+static size_t ComputePresendence(unsigned char *operator)
 {
-	return presendence_lut[(int)*operator];
+	return presendence_lut[(int)(*operator)];
 }
 
 static s_y_stacks_t *InitShuntingYard(size_t stack_size)
@@ -232,10 +272,22 @@ static s_y_stacks_t *InitShuntingYard(size_t stack_size)
 	return init_calculator;
 }
 
+static void DestroyCalculator(s_y_stacks_t *calculator)
+{
+    StackDestroy(calculator->numbers_stack); 
+    calculator->numbers_stack = NULL;
+    StackDestroy(calculator->operators_stack); 
+    calculator->operators_stack = NULL;
+    
+    free(calculator); calculator = NULL;
+}
+
 double Calculator(const char *expression, calc_errno_t *errno)
 {
 	calculator_state_t current_state = WAIT_FOR_NUMBER;
 	s_y_stacks_t *calculator = NULL;
+	char *data = (char *)expression;
+	double result = 0;
 
 	assert(NULL != expression);
 	assert(NULL != errno);
@@ -251,16 +303,22 @@ double Calculator(const char *expression, calc_errno_t *errno)
 
 	do
 	{
-		transition_lut[current_state][(int)*expression].action_func(calculator,
-		(char *)expression, errno);
+	    char *prev_data = data;
+		data = transition_lut[current_state][(int)*data].action_func(calculator,
+		data, errno);
 		current_state = 
-		transition_lut[current_state][(int)*expression].next_state;
+		transition_lut[current_state][(int)*prev_data].next_state;
 	} while (current_state != END && current_state != ERROR);
 	
-	return *(double *)StackPeek(calculator->numbers_stack);
+	result = *(double *)StackPeek(calculator->numbers_stack);
+
+	DestroyCalculator(calculator);
+
+	return result;
 }
 
-static int InvalidErrorFunc(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static char *InvalidErrorFunc(s_y_stacks_t *stack, char *data, 
+                              calc_errno_t *errno)
 {
 	assert(NULL != stack);
 	assert(NULL != data);
@@ -271,28 +329,31 @@ static int InvalidErrorFunc(s_y_stacks_t *stack, char *data, calc_errno_t *errno
 	
 	*errno = CALC_ERR_INVALID_EXPRESSION;
 	
-	return 0;
+	return NULL;
 }
 
-static int PushToNumStack(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static char *PushToNumStack(s_y_stacks_t *stack, char *data, 
+                            calc_errno_t *errno)
 {
 	double number_to_push = 0;
 	char **new_position = NULL;
 
-	assert(NULL != stack);
+	assert(NULL != stack);1/0 in c
 	assert(NULL != data);
 	assert(NULL != errno);
 	
 	new_position = &data;
 	number_to_push = strtod(data, new_position);
 	
-	data = *new_position;
 	*errno = CALC_SUCCESS;
 	
-	return StackPush(stack->numbers_stack, &number_to_push);
+	StackPush(stack->numbers_stack, &number_to_push);
+	
+	return data;
 }
 
-static int SpaceMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static char *SpaceMoveToNext(s_y_stacks_t *stack, char *data, 
+                             calc_errno_t *errno)
 {
 	assert(NULL != stack);
 	assert(NULL != data);
@@ -300,17 +361,18 @@ static int SpaceMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
 
 	UNUSED(stack);
 
-	while (!isspace(*data))
+	while (isspace(*data))
 	{
 		++data;
 	}
 
 	*errno = CALC_SUCCESS;
 
-	return 0;
+	return data;
 }
 
-static int ParenthesMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static char *ParenthesMoveToNext(s_y_stacks_t *stack, char *data, 
+                                 calc_errno_t *errno)
 {
 	assert(NULL != stack);
 	assert(NULL != data);
@@ -322,62 +384,125 @@ static int ParenthesMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *er
 	return SpaceMoveToNext(stack, data, errno);
 }
 
-static int UnaryMoveToNext(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static char *UnaryMoveToNext(s_y_stacks_t *stack, char *data, 
+                             calc_errno_t *errno)
 {
+    char ch = 1;
+    char *error_data = &ch;
+    char **new_position = NULL;
+    double number_to_push = 0;
+
 	assert(NULL != stack);
 	assert(NULL != data);
 	assert(NULL != errno);
 
-	++data;
-	
-	if (!isdigit(*data))
+	if (!isdigit(*(data+1)))
 	{
 		*errno = CALC_ERR_INVALID_EXPRESSION;
-		return -1;
+		return error_data;
 	}
 
-	return SpaceMoveToNext(stack, data, errno);
+    new_position = &data;
+	number_to_push = strtod(data, new_position);
+    StackPush(stack->numbers_stack, &number_to_push);
+
+    errno = CALC_SUCCESS;
+
+	return data;
 }
 
-static int OperatorPush(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static void PushOperator(s_y_stacks_t *stack, char *data)
 {
-	char *operator_on_top = NULL;
+    assert(NULL != stack);
+    assert(NULL != data);
 
+    StackPush(stack->operators_stack, data);
+}
+
+static void FoldAndPush(s_y_stacks_t *stack, char *data)
+{
+    double num1 = 0;
+    double num2 = 0;
+    double result = 0;
+
+    assert(NULL != stack);
+    assert(NULL != data);
+
+    num1 = *(double *)StackPeek(stack->numbers_stack);
+    StackPop(stack->numbers_stack);
+    num2 = *(double *)StackPeek(stack->numbers_stack);
+    StackPop(stack->numbers_stack);
+    result = 
+    operation_lut[(int)(*(unsigned char *)StackPeek(stack->operators_stack))]
+                                                                (num1, num2);
+    StackPop(stack->operators_stack);
+    StackPush(stack->numbers_stack, &result);
+    
+    is_stack_empty_lut[StackIsEmpty(stack->operators_stack)](stack, data);
+}
+
+static void CheckPresendence(s_y_stacks_t *stack, char *data)
+{
+    unsigned char *operator_on_top = NULL;
+
+    assert(NULL != stack);
+    assert(NULL != data);
+
+    operator_on_top = (unsigned char *)StackPeek(stack->operators_stack);
+    do_operation_lut[ComputePresendence((unsigned char *)data) > 
+                     ComputePresendence(operator_on_top)](stack, data);
+}
+
+static char *OperatorPush(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+{
 	assert(NULL != stack);
 	assert(NULL != data);
 	assert(NULL != errno);
 
-	if (StackIsEmpty(stack->operators_stack))
+    is_stack_empty_lut[StackIsEmpty(stack->operators_stack)](stack, data);
+
+	*errno = CALC_SUCCESS;
+	++data;
+	
+	return data;
+}
+
+static char *CheckStackEmpty(s_y_stacks_t *stack, char *data, 
+                             calc_errno_t *errno)
+{
+	assert(NULL != stack);
+	assert(NULL != data);
+	assert(NULL != errno);
+	
+	if (StackSize(stack->operators_stack) == StackSize(stack->numbers_stack))
 	{
-		StackPush(stack->operators_stack, data);
+	    double err_num = 0xDEADDEADDEAD;
+	
+	    while (!StackIsEmpty(stack->numbers_stack))
+	    {
+	        StackPop(stack->numbers_stack);
+	    }
+	    
+	    StackPush(stack->numbers_stack, &err_num);
+	    *errno = CALC_ERR_INVALID_EXPRESSION;
 	}
 	else
 	{
-		operator_on_top = (char *)StackPeek(stack->operators_stack);
-		do_operation_lut[ComputePresendence(data) > 
-					  ComputePresendence(operator_on_top)];
+		is_stack_empty_lut[StackIsEmpty(stack->operators_stack)](stack, data);
+	    *errno = CALC_SUCCESS;
 	}
 
-	*errno = CALC_SUCCESS;
 	
-	return 0;
+	return NULL;
 }
 
-static int CheckStackEmpty(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
+static char *ParenthesFold(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
 {
 	assert(NULL != stack);
 	assert(NULL != data);
 	assert(NULL != errno);
-	
-	*errno = StackIsEmpty(stack->operators_stack);
-	UNUSED(data);
-	
-	return 0;
-}
 
-static int ParenthesFold(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
-{
-	while (*(char *)StackPeek(stack->operators_stack) != '(')
+	while (*(unsigned char *)StackPeek(stack->operators_stack) != '(')
 	{
 		double num1 = *(double *)StackPeek(stack->numbers_stack);
 		double num2 = 0;
@@ -388,14 +513,18 @@ static int ParenthesFold(s_y_stacks_t *stack, char *data, calc_errno_t *errno)
 		StackPop(stack->numbers_stack);
 		
 		result = 
-		operation_lut[(int)(*(char *)StackPeek(stack->operators_stack))](num1, num2);
+		operation_lut[(int)*(unsigned char *)StackPeek(stack->operators_stack)]
+		(num1, num2);
 		
 		StackPop(stack->operators_stack);
 		StackPush(stack->numbers_stack, &result);
 	}
-	
+
 	*errno = CALC_SUCCESS;
 	++data;
 
-	return StackPop(stack->operators_stack);
+	StackPop(stack->operators_stack);
+
+	return data;
 }
+
