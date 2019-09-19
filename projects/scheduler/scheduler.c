@@ -51,7 +51,7 @@ scheduler_t *SchedCreate(void)
 		return NULL;
 	}
 
-	new_scheduler->pq = PriorityQCreate(TimeCmpFunc, NULL);
+	new_scheduler->pq = PriorityQCreate(ExeTimeCmpFunc, NULL);
 	if (NULL == new_scheduler->pq)
 	{
 		free(new_scheduler); new_scheduler = NULL;
@@ -78,7 +78,7 @@ void SchedDestroy(scheduler_t *sched)
 	free(sched); sched = NULL;
 }
 
-ilrd_uid_t SchedAddTask(scheduler_t *sched, t_action_func_t action_func, 
+ilrd_uid_t SchedAddTask(scheduler_t *sched, action_func_t action_func, 
 						void *params, time_t exe_interval_in_seconds, 
 						time_t execution_start_time)
 {
@@ -120,7 +120,7 @@ void SchedRemoveTask(scheduler_t *sched, ilrd_uid_t task_uid)
 	else
 	{
 		task_t * task_to_free = PriorityQErase(sched->pq, &task_uid, 
-		                                       TaskUidCompare);
+		                                       IsTaskUidSame);
 		TaskDestroy(task_to_free); task_to_free = NULL;
 	}
 }

@@ -149,14 +149,16 @@ static void SortArray(int *arr, int *arr_sorted, size_t size, size_t *histogram,
                       int min)
 {
     int *start_of_arr = NULL;
+    int *end_of_arr = NULL;
 
     assert(NULL != arr);
     assert(NULL != arr_sorted);
     assert(NULL != histogram);
+    assert(size > 0);
 
-    start_of_arr = arr;
 
-    for (; (size_t)(arr - start_of_arr) < size; ++arr)
+    for (start_of_arr = arr, end_of_arr = start_of_arr + size; 
+         arr < end_of_arr; ++arr)
     {
         int index = *arr - min;
         arr_sorted[histogram[index]] = *arr;
@@ -205,42 +207,43 @@ int Counting(int *arr, size_t size, int min, int max)
 }
 
 static void FillHistogramWithCountsMasking(size_t *histogram, unsigned int mask,
-                                            size_t i, int *arr, size_t size)
+                                            size_t shifting, int *arr, size_t size)
 {
     int *start_of_arr = NULL;
+    int *end_of_arr = NULL;
 
     assert(NULL != arr);
     assert(NULL != histogram);
+    assert(size != 0);
 
-    start_of_arr = arr;
-
-    for (; (size_t)(arr - start_of_arr) < size; ++arr)
+    for (start_of_arr = arr, end_of_arr = start_of_arr + size; 
+         arr < end_of_arr; ++arr)
     {
-        ++histogram[((*arr >> i) & mask) + 1];
+        ++histogram[((*arr >> shifting) & mask) + 1];
     }
 
-    arr = start_of_arr;
+    arr = start_of_arr; /*return arr to the start point*/
 }
 
 static void SortArrayMask(int *arr, int *arr_sorted, size_t size, 
-                          size_t *histogram, unsigned int mask, size_t i)
+                          size_t *histogram, unsigned int mask, size_t shifting)
 {
     int *start_of_arr = NULL;
+    int *end_of_arr = NULL;
 
     assert(NULL != arr);
     assert(NULL != arr_sorted);
     assert(NULL != histogram);
 
-    start_of_arr = arr;
-
-    for (; (size_t)(arr - start_of_arr) < size; ++arr)
+    for (start_of_arr = arr, end_of_arr = start_of_arr + size; 
+         arr < end_of_arr; ++arr)
     {
-        int index = (*arr >> i) & mask;
+        int index = (*arr >> shifting) & mask;
         arr_sorted[histogram[index]] = *arr;
         ++histogram[index];
     }
 
-    arr = start_of_arr;
+    arr = start_of_arr; /*return arr to the start point*/
 }
 
 static void SwapArraysPointers(int **arr1, int **arr2)
@@ -266,7 +269,7 @@ int Radix(int *arr, size_t size, unsigned int num_of_bits)
 
     assert(NULL != arr);
 
-    histogram = (size_t *)calloc(histogram_size, sizeof(size_t));
+    histogram = (size_t *)malloc(histogram_size * sizeof(size_t));
     if (NULL == histogram)
     {
         return -1;
@@ -275,17 +278,23 @@ int Radix(int *arr, size_t size, unsigned int num_of_bits)
     arr_for_sorting = (int *)malloc(size * sizeof(int));
     if (NULL == arr_for_sorting)
     {
-        free(histogram); histogram = NULL;
+        histogram = FreeFunction(histogram);
         return -1;
     }
 
     for (i = 0; i < number_of_sorting; ++i)
     {
-        FillHistogramWithCountsMasking(histogram, mask, i, arr, size);
+        memset(histogram, 0, histogram_size * sizeof(size_t)); /*initialize histogram with 0*/
+        FillHistogramWithCountsMasking(histogram, mask, i * num_of_bits, arr, 
+                                       size);
         ShiftHistogramPosition(histogram, histogram_size);
-        SortArrayMask(arr, arr_for_sorting, size, histogram, mask, i);
+        SortArrayMask(arr, arr_for_sorting, size, histogram, mask, 
+                      i * num_of_bits);
         SwapArraysPointers(&arr, &arr_for_sorting);
     }
-    
+
+    histogram = FreeFunction(histogram);
+    arr_for_sorting = FreeFunction(arr_for_sorting);
+
     return 0;
 }

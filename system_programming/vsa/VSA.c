@@ -139,7 +139,7 @@ void *VSAAlloc(vsa_t *vsa, size_t block_size)
     }
 
     old_block_size = next_block->block_size;
-
+    
     if (old_block_size > aligned_size + sizeof(*next_block))
     {
         InitBlock(next_block, -aligned_size);

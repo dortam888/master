@@ -91,9 +91,10 @@ static bst_iter_t BSTGetParent(bst_iter_t iter)
     return GetNodeFromIter(iter)->parent;
 }
 
-/****************IsDummy******************************************************/
+/*************************IsDummy*********************************************/
 static int IsDummy(bst_iter_t iter)
 {
+    /*dummy is the only node that is the parent of itself*/
     return BSTIsSameIter(iter, BSTGetParent(iter));
 }
 
@@ -110,138 +111,6 @@ static bst_iter_t BSTGetRoot(const bst_t *bst) /*for insert and find functions*/
     assert(NULL != bst->dummy_node);
 
     return bst->dummy_node->child[ROOT];
-}
-
-/************************BSTCreate Function************************************/
-static struct bst_node *CreateNode(void *data, 
-                                   struct bst_node *parent,
-                                   struct bst_node *child_right, 
-                                   struct bst_node *child_left) 
-{
-    struct bst_node *new_node = (struct bst_node *)
-                                                malloc(sizeof(struct bst_node));
-    if (NULL == new_node)
-    {
-        return NULL;
-    }
-    
-    new_node->data = data;
-    new_node->parent = parent;
-    new_node->child[RIGHT] = child_right;
-    new_node->child[LEFT] = child_left;
-
-    return new_node;
-}
-
-bst_t *BSTCreate(cmp_func_t cmp_func, void *params)
-{
-    bst_t *new_bst = (bst_t *)malloc(sizeof(bst_t));
-    if (NULL == new_bst)
-    {
-        return NULL;
-    }
-
-    new_bst->cmp_func = cmp_func;
-    new_bst->params = params;
-
-    new_bst->dummy_node = CreateNode(NULL, NULL, NULL, NULL);
-    if (NULL == new_bst->dummy_node)
-    {
-        free(new_bst); new_bst = NULL;
-        return NULL;
-    }
-
-    new_bst->dummy_node->child[BEGIN] = new_bst->dummy_node;
-    new_bst->dummy_node->child[ROOT] = GetNodeFromIter(InvalidIter());
-    new_bst->dummy_node->parent = new_bst->dummy_node;
-
-    return new_bst;
-}
-
-/************************BSTInsert Function************************************/
-bst_iter_t BSTInsert(bst_t *bst, void *data)
-{
-    struct bst_node *new_node = NULL;
-    bst_iter_t iter = InitBSTIter();
-    bst_iter_t invalid_iter = InvalidIter();
-    struct bst_node *parent = NULL;
-    enum child_direction direction = RIGHT;
-
-    assert(NULL != bst);
-
-    parent = bst->dummy_node;
-    new_node = CreateNode(data, invalid_iter, invalid_iter, invalid_iter);
-    if (NULL == new_node)
-    {
-        return NULL;
-    }
-
-    iter = BSTGetRoot(bst);
-
-    /* update begin if minimum changed (or if empty)*/
-    if (BSTIsEmpty(bst))
-    {
-        bst->dummy_node->child[BEGIN] = new_node;
-    }
-    else if (bst->cmp_func(BSTGetData(BSTBegin(bst)), data, bst->params) > 0) 
-    {
-        iter = BSTBegin(bst); /*move iter to minimum before update so insertion
-                                will be O(1) instead of O(Log(n))*/
-        bst->dummy_node->child[BEGIN] = new_node;
-    }
-
-    for (; !BSTIsSameIter(iter, invalid_iter); 
-         iter = BSTMoveToChild(iter, direction))
-    {
-        parent = iter;
-
-        if (bst->cmp_func(BSTGetData(iter), data, bst->params) < 0)
-        {
-            direction = RIGHT;
-        }
-        else
-        {
-            direction = LEFT;
-        }
-    }
-
-    new_node->parent = parent;
-    parent->child[direction] = new_node;
-
-    return new_node;
-}
-
-/************************BSTFind Function**************************************/
-bst_iter_t BSTFind(bst_t *bst, void *data_to_find)
-{
-    bst_iter_t iter = InitBSTIter();
-    bst_iter_t return_iter = InitBSTIter();
-    bst_iter_t invalid_iter = InvalidIter();
-    enum child_direction direction = RIGHT;
-
-    assert(NULL != bst);
-
-    for (iter = BSTGetRoot(bst); !BSTIsSameIter(iter, invalid_iter); 
-         iter = BSTMoveToChild(iter, direction))
-    {
-        int cmp_func_result = 0;
- 
-        if (cmp_func_result < 0)
-        {
-            direction = RIGHT;
-        }
-        else if (cmp_func_result > 0)
-        {
-            direction = LEFT;
-        }
-        else
-        {
-            return_iter = iter;
-            break;
-        }
-    }
-
-    return return_iter;
 }
 
 /************************BSTNext & BSTPrev Functions***************************/
@@ -311,6 +180,140 @@ void *BSTGetData(bst_iter_t iter)
 int BSTIsSameIter(bst_iter_t iter1, bst_iter_t iter2)
 {
     return (iter1 == iter2);
+}
+
+/************************BSTCreate Function************************************/
+static struct bst_node *CreateNode(void *data, 
+                                   struct bst_node *parent,
+                                   struct bst_node *child_right, 
+                                   struct bst_node *child_left) 
+{
+    struct bst_node *new_node = 
+                            (struct bst_node *)malloc(sizeof(struct bst_node));
+    if (NULL == new_node)
+    {
+        return NULL;
+    }
+    
+    new_node->data = data;
+    new_node->parent = parent;
+    new_node->child[RIGHT] = child_right;
+    new_node->child[LEFT] = child_left;
+
+    return new_node;
+}
+
+bst_t *BSTCreate(cmp_func_t cmp_func, void *params)
+{
+    bst_t *new_bst = (bst_t *)malloc(sizeof(bst_t));
+    if (NULL == new_bst)
+    {
+        return NULL;
+    }
+
+    new_bst->cmp_func = cmp_func;
+    new_bst->params = params;
+
+    new_bst->dummy_node = CreateNode(NULL, NULL, NULL, NULL);
+    if (NULL == new_bst->dummy_node)
+    {
+        free(new_bst); new_bst = NULL;
+        return NULL;
+    }
+
+    new_bst->dummy_node->child[BEGIN] = new_bst->dummy_node;
+    new_bst->dummy_node->child[ROOT] = GetNodeFromIter(InvalidIter());
+    new_bst->dummy_node->parent = new_bst->dummy_node;
+
+    return new_bst;
+}
+
+/************************BSTInsert Function************************************/
+bst_iter_t BSTInsert(bst_t *bst, void *data)
+{
+    struct bst_node *new_node = NULL;
+    bst_iter_t iter = InitBSTIter();
+    bst_iter_t invalid_iter = InvalidIter();
+    struct bst_node *invalid_node = GetNodeFromIter(invalid_iter);
+    struct bst_node *parent = NULL;
+    enum child_direction direction = RIGHT;
+
+    assert(NULL != bst);
+
+    parent = bst->dummy_node;
+    new_node = CreateNode(data, invalid_node, invalid_node, invalid_node);
+    if (NULL == new_node)
+    {
+        return NULL;
+    }
+
+    iter = BSTGetRoot(bst);
+
+    /* update begin if minimum changed (or if empty)*/
+    if (BSTIsEmpty(bst))
+    {
+        bst->dummy_node->child[BEGIN] = new_node;
+    }
+    else if (bst->cmp_func(BSTGetData(BSTBegin(bst)), data, bst->params) > 0) 
+    {
+        iter = BSTBegin(bst); /*move iter to minimum before update so insertion
+                                will be O(1) instead of O(Log(n))*/
+        bst->dummy_node->child[BEGIN] = new_node;
+    }
+
+    for (; !BSTIsSameIter(iter, invalid_iter); 
+         iter = BSTMoveToChild(iter, direction))
+    {
+        parent = iter;
+
+        if (bst->cmp_func(BSTGetData(iter), data, bst->params) < 0)
+        {
+            direction = RIGHT;
+        }
+        else
+        {
+            direction = LEFT;
+        }
+    }
+
+    new_node->parent = parent;
+    parent->child[direction] = new_node;
+
+    return new_node;
+}
+
+/************************BSTFind Function**************************************/
+bst_iter_t BSTFind(bst_t *bst, void *data_to_find)
+{
+    bst_iter_t iter = InitBSTIter();
+    bst_iter_t return_iter = InitBSTIter();
+    bst_iter_t invalid_iter = InvalidIter();
+    enum child_direction direction = RIGHT;
+
+    assert(NULL != bst);
+
+    for (iter = BSTGetRoot(bst); !BSTIsSameIter(iter, invalid_iter); 
+         iter = BSTMoveToChild(iter, direction))
+    {
+        int cmp_func_result = bst->cmp_func(BSTGetData(iter), data_to_find,
+                                            bst->params);
+
+        if (cmp_func_result < 0)
+        {
+            direction = RIGHT;
+        }
+        else if (cmp_func_result > 0)
+        {
+            direction = LEFT;
+        }
+        else
+        {
+            return_iter = iter;
+            break;
+        }
+    }
+
+    return return_iter;
 }
 
 /**************************BSTIsEmpty Function*********************************/
