@@ -1,101 +1,92 @@
-/*############################################################################*/
-/* Owner: OL712                                                               */
-/* Reviewer: OL712                                                            */
-/* Create: Tuesday September 10 2019 02:04:39                                 */
-/* This file contains functions for AVL tree (binary search tree) data        */
-/* structure                                                                  */
-/* operations.                                                                */
-/* Can be used for AVL based algorithms                                       */
-/*############################################################################*/
-
-#ifndef ILRD_AVL_H
-#define ILRD_AVL_H
+#ifndef __ILRD_AVL_H
+#define __ILRD_AVL_H
 
 #include <stddef.h> /* size_t */
 
-typedef struct avl avl_t; 
+typedef struct avl avl_t;
 
 /*
- * Create new avl tree
- * Param @cmp_func - user comparison function. returns 0 if <iter_data> and 
- *					 <new_data> are equal, positive if <iter_data> is larger 
- *					 or negative if its smaller.
- * Param @param - user param for <cmp_func> function
- * Return: pointer to new binary search tree
- * Errors: if memory allocation failed, return NULL
+ * Create new AVL tree.
+ * Param: @cmp_func - user comparison function. Returns 0 if <tree_data> and 
+ *					  <new_data> are equal, positive if <tree_data> is after 
+ *					  or negative if it's before.
+ * Param: @param - user Param: for <cmp_func> function.
+ * Return: pointer to new AVL tree.
+ * Errors: if memory allocation failed, return NULL.
  */
-avl_t *AVLCreate(int (*cmp_func)(void *iter_data, void *new_data, void *param), 
-				 void *param);
+avl_t *AVLCreate(void *param, int (*cmp_func)(const void *tree_data,
+								 			  const void *new_data,
+								 			  void *param));
 
-/*
- * Destroy binary search tree 
- * Param @avl - pointer to binary search tree  
- * Return : --
- * Errors : --
+/* 
+ * POST-ORDER.
+ * Destroy AVL tree.
+ * Param: @avl - pointer to AVL tree.
  */
 void AVLDestroy(avl_t *avl);
 
 /*
- * Insert new element to tree
- * Param @AVL - pointer to binary search tree  
- * Param @data - pointer to data to insert
- * Return : pointer to new leaf
- * Errors : if memory allocation failed, return NULL
+ * Insert new element to tree.
+ * Param: @avl - pointer to AVL tree. 
+ * Param: @data_to_insert - pointer to data to insert.
+ * Return: 0 on success.
+ * Errors: if memory allocation failed, return 1.
  */
-int AVLInsert(avl_t *avl, void *data); 
+int AVLInsert(avl_t *avl, const void *data_to_insert); 
 
 /*
- * Removes iter from tree
- * Param @iter_to_remove - iter to remove
- * Return : --
+ * Removes iter from tree.
+ * Param: @avl - pointer to AVL tree
+	      @data_to_remove: data to remove.
+ * Errors: if data not found, do nothing.
  */
-int AVLRemove(void *data);
+void AVLRemove(avl_t *avl, const void *data_to_remove);
+
+/* 
+ * PRE-ORDER.
+ * Count how many nodes in given AVL tree.
+ * Param:  @avl - AVL tree.
+ * Return: number of nodes of avl.
+ */
+size_t AVLCount(const avl_t *avl); 
 
 /*
- * Count how many nodes in given binary search tree
- * Param  @AVL - binary search tree  
- * Return : size of AVL
- * Errors : --
+ * Check height of AVL tree.
+ * Param:  @avl - pointer to AVL tree.
+ * Return: height of avl.
  */
-size_t AVLSize(const avl_t *avl); 
+size_t AVLHeight(const avl_t *avl); 
 
 /*
- * Check if tree is empty
- * Param  @AVL - binary search tree
- * Return : 1 if AVL is empty, 0 otherwise
- * Errors : --
+ * Check if tree is empty.
+ * Param:  @avl - AVL tree.
+ * Return: 1 if avl is empty, 0 otherwise.
  */
 int AVLIsEmpty(const avl_t *avl); 
 
 /*
- * Perform <action_func> for each element in <AVL>, stops if action returns
- *        non-zero.
- * Param @param - user param for <action_func>
- * Param @action_func - function to perform.
- * Note : <action_func> should not alter <iter_data>, doing so might alter
- *		  the structural logic of the AVL.
-		  <action_func> return 0 on success, non-zero otherwise
- * Return : 0 for success, action's last return value otherwise
- * Errors : --
+ * IN-ORDER.
+ * Perform <action_func> for each element in <avl>,
+ * stops if action returns non-zero.
+ * Param: @avl - pointer to AVL tree.
+ * Param: @param - user Param: for <action_func>.
+ * Param: @action_func - function to perform.
+ * Note: <action_func> should not alter <tree_data>, doing so might alter
+ *		 the structural logic of the avl. <action_func> return 0 on success,
+ 		 non-zero otherwise.
+ * Return: 0 for success, action's last return value otherwise.
  */
-int AVLForEach(void *param, int (*action_func)(void *iter_data, void *param));
+int AVLForEach(void *param, avl_t *avl, int (*action_func)(void *tree_data,
+														   void *param));
 
 /*
- * Find <data> in binary tree <AVL> 
- * Param  @AVL - binary search tree to search
- * Param  @data - data to find
- * Return : iter to found iter
- * Errors : if <data> was not found, return END
+ * Find <data> in binary tree <avl>.
+ * Param:  @avl - pointer to AVL tree to search.
+ * Param:  @data - data to find.
+ * Return: pointer to found data.
+ * Errors: if <data> was not found, return NULL.
  */
-int AVLFind(avl_t *avl, void *data_to_find);
+void *AVLFind(const avl_t *avl, const void *data_to_find);
 
-/*
- * count deepest branch in avl
- * Param  @AVL - avl tree  
- * Return : avl height
- * Errors : --
- */
-size_t AVLHeight(const avl_t *avl);
-
-#endif /*ILRD_AVL_H*/
+#endif /* __ILRD_AVL_H */
 
