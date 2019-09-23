@@ -68,7 +68,7 @@ static void TestFlow1()
         printf("size was %lu\n", AVLCount(new_avl));
         FAIL("size didn't work");
     }
-
+/*
     AVLRemove(new_avl, arr_of_numbers);
     
     if (9 != AVLCount(new_avl))
@@ -95,7 +95,7 @@ static void TestFlow1()
         printf("size was %lu\n", AVLCount(new_avl));
         FAIL("size didn't work");
     }
-
+*/
     AVLDestroy(new_avl);
 
     if (0 == error_counter)
@@ -113,6 +113,7 @@ static void TestFlowForEachFind()
     size_t i = 0LU;
     size_t error_counter = 0LU;
     avl_t *new_avl = AVLCreate(NULL, IntCmpFunc);
+    int foreach_stat = 0;
 
     for(i = 0LU; i < sizeof(arr_of_numbers)/sizeof(*arr_of_numbers); ++i)
     {
@@ -125,21 +126,23 @@ static void TestFlowForEachFind()
         FAIL("Find didn't work");
     }
 
+/*
     AVLRemove(new_avl, &arr_of_numbers[2]);
-
-    if (NULL != AVLFind(new_avl, &to_find))
+*/
+    if (NULL != AVLFind(new_avl, &param_to_function))
     {
         ++error_counter;
+        printf("%p\n", AVLFind(new_avl, &param_to_function));
         FAIL("Find didn't work on not find");
     }
 
     AVLForEach(&param_to_function, new_avl, PrintTreePlusParam);
 
-    AVLForEach(&param_to_divide, new_avl, PrintTreePlusParam);
-
-    if (1 != AVLForEach(&param_to_divide, new_avl, DivideParamInData))
+    foreach_stat = AVLForEach(&param_to_divide, new_avl, DivideParamInData);
+    if (1 != foreach_stat)
     {
         ++error_counter;
+        printf("foreach status is %d\n", foreach_stat);
         FAIL("ForEach didn't work on fail");
     }
 
