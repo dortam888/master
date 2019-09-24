@@ -68,7 +68,7 @@ static void TestFlow1()
         printf("size was %lu\n", AVLCount(new_avl));
         FAIL("size didn't work");
     }
-/*
+
     AVLRemove(new_avl, arr_of_numbers);
     
     if (9 != AVLCount(new_avl))
@@ -95,7 +95,7 @@ static void TestFlow1()
         printf("size was %lu\n", AVLCount(new_avl));
         FAIL("size didn't work");
     }
-*/
+
     AVLDestroy(new_avl);
 
     if (0 == error_counter)
@@ -126,10 +126,9 @@ static void TestFlowForEachFind()
         FAIL("Find didn't work");
     }
 
-/*
-    AVLRemove(new_avl, &arr_of_numbers[2]);
-*/
-    if (NULL != AVLFind(new_avl, &param_to_function))
+    AVLRemove(new_avl, &arr_of_numbers[3]);
+
+    if (NULL != AVLFind(new_avl, &to_find))
     {
         ++error_counter;
         printf("%p\n", AVLFind(new_avl, &param_to_function));

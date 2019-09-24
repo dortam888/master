@@ -32,6 +32,9 @@ typedef enum child_direction
     LEFT
 } child_direction_t;
 
+static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove, 
+                              avl_t *avl);
+
 static avl_node_t *AVLCreateNode(void *data, avl_node_t *child_right,
                                  avl_node_t *child_left)
 {
@@ -296,10 +299,62 @@ int AVLInsert(avl_t *avl, const void *data_to_insert)
     return RecInsert(avl, root, new_node);
 }
 
-/*
-static avl_node_t *DestroyNode(avl_node_t *node)
+static avl_node_t *MostLeft(avl_node_t *node)
 {
+	avl_node_t *most_left = NULL;
+	
+	assert(NULL != node);
+	
+	most_left = node;
+	
+	if (NULL == most_left->child[LEFT])
+	{
+		return most_left;
+	}
+	
+	most_left = MostLeft(most_left->child[LEFT]);
+	
+	return most_left;
+}
 
+static int ZeroChild(avl_node_t *node)
+{
+	assert(NULL != node);
+
+	return (NULL == node->child[RIGHT] && NULL == node->child[LEFT]);
+}
+
+static int OneChild(avl_node_t *node)
+{
+	assert(NULL != node);
+
+	return (NULL == node->child[RIGHT] || NULL == node->child[LEFT]);
+}
+
+static avl_node_t *DestroyNode(avl_node_t *node, avl_t *avl)
+{
+	assert(NULL != node);
+
+	if (ZeroChild(node))
+	{
+		free(node); node = NULL;
+	}
+	else if (OneChild(node))
+	{
+		avl_node_t *child = (node->child[RIGHT] == NULL)? 
+							 node->child[LEFT] : node->child[RIGHT];
+		
+		*node = *child;
+		free(child); child = NULL;
+	}
+	else
+	{
+		avl_node_t *invalidate_node = MostLeft(node->child[RIGHT]);
+		node->data = invalidate_node->data;
+		node->child[RIGHT] = RemoveNode(node->child[RIGHT], node->data, avl);
+	}
+	
+	return node;
 }
 
 static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove, 
@@ -311,11 +366,11 @@ static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove,
     assert(NULL != avl);
     assert(NULL != node);
     
-    cmp_func_result = avl->cmp_func(data_to_remove, node->data, avl->param);
+    cmp_func_result = avl->cmp_func(node->data, data_to_remove, avl->param);
     
     if (0 == cmp_func_result)
     {
-        return DestroyNode(node);
+        return DestroyNode(node, avl);
     }
     
     direction = (cmp_func_result < 0);
@@ -329,7 +384,8 @@ static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove,
                                         avl);
                                         
     node->height = UpdateHeight(node);
-    Balance(node);
+    return node;
+    /*Balance(node);*/
 }
 
 void AVLRemove(avl_t *avl, const void *data_to_remove)
@@ -342,4 +398,4 @@ void AVLRemove(avl_t *avl, const void *data_to_remove)
     
     RemoveNode(root, data_to_remove, avl);
 }
-*/
+
