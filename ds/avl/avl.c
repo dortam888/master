@@ -35,6 +35,7 @@ typedef enum child_direction
 static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove, 
                               avl_t *avl);
 
+
 static avl_node_t *AVLCreateNode(void *data, avl_node_t *child_right,
                                  avl_node_t *child_left)
 {
@@ -75,6 +76,21 @@ avl_t *AVLCreate(void *param, int (*cmp_func)(const void *tree_data,
     return new_avl;
 }
 
+static child_direction_t SwitchDirection(child_direction_t direction)
+{
+    switch (direction)
+    {
+        case (RIGHT):
+                     direction = LEFT;
+                     break;
+        case (LEFT):
+                     direction = RIGHT;
+                     break;
+    }
+
+    return direction;
+}
+
 static avl_node_t *AVLGetRoot(const avl_t *avl)
 {
     assert(NULL != avl);
@@ -84,7 +100,7 @@ static avl_node_t *AVLGetRoot(const avl_t *avl)
 }
 
 static avl_node_t *AVLMoveToChild(avl_node_t *node, 
-                                  enum child_direction direction)
+                                  child_direction_t direction)
 {
     assert(NULL != node);
 
@@ -171,7 +187,7 @@ static avl_node_t *RecFind(avl_node_t *node, const avl_t *avl,
                     const void *data_to_find)
 {
     int cmp_result = 0;
-    enum child_direction direction = RIGHT;
+    child_direction_t direction = RIGHT;
 
     assert(NULL != avl);
     
@@ -207,11 +223,11 @@ void *AVLFind(const avl_t *avl, const void *data_to_find)
 static void RecForEach(avl_node_t *node, int (*action_func)(void *tree_data,
 					  void *param), void *param, int *action_func_status)
 {
-    if (NULL == node || *action_func_status != 0)
+    if (NULL == node || 0 != *action_func_status)
     {
         return;
     }
-    
+
     RecForEach(node->child[LEFT], action_func, param, action_func_status);
     *action_func_status += action_func(node->data, param);
     RecForEach(node->child[RIGHT], action_func, param, action_func_status);
@@ -222,14 +238,14 @@ int AVLForEach(void *param, avl_t *avl, int (*action_func)(void *tree_data,
 {
     avl_node_t *node = NULL;
     int action_func_status = 0;
-    
+
     assert(NULL != avl);
     assert(NULL != action_func);
-    
+
     node = AVLGetRoot(avl);
 
     RecForEach(node, action_func, param, &action_func_status);
-    
+
     return action_func_status;
 }
 
@@ -251,9 +267,98 @@ static size_t UpdateHeight(avl_node_t *node)
     return (1 + MaxHeight(height_left, height_right));
 }
 
+static int GetBalance(avl_node_t *node)
+{
+    size_t height_right = 0;
+    size_t height_left = 0;
+
+    assert(NULL != node);
+
+    height_left = (NULL == node->child[LEFT])? 0 : node->child[LEFT]->height;
+    height_right = (NULL == node->child[RIGHT])? 0 : node->child[RIGHT]->height;
+    
+    return height_left - height_right;
+}
+
+static avl_node_t *Rotate(avl_node_t *node, child_direction_t direction)
+{
+    avl_node_t *pivot_node = NULL;
+    child_direction_t other_direction = SwitchDirection(direction);
+
+    assert(NULL != node);
+
+    pivot_node = node->child[other_direction];
+
+    pivot_node->child[direction] = node;
+    node->child[other_direction] = 
+    node->child[other_direction]->child[direction];
+    
+    UpdateHeight(node);
+    UpdateHeight(pivot_node);
+    
+    return pivot_node;
+}
+
+static int LeftLeftImbalance(int balance_factor, avl_node_t *node, avl_t *avl)
+{
+    return balance_factor > 1 && 
+           avl->cmp_func(node->child[LEFT]->data, node->data, avl->param) < 0;
+}
+
+static int RightRightImbalance(int balance_factor, avl_node_t *node, avl_t *avl)
+{
+    return balance_factor < -1 && 
+           avl->cmp_func(node->child[RIGHT]->data, node->data, avl->param) > 0;
+}
+
+static int LeftRightImbalance(int balance_factor, avl_node_t *node, avl_t *avl)
+{
+    return balance_factor > 1 && 
+           avl->cmp_func(node->child[LEFT]->data, node->data, avl->param) > 0;
+}
+
+static int RightLeftImbalance(int balance_factor, avl_node_t *node, avl_t *avl)
+{
+    return balance_factor < -1 && 
+           avl->cmp_func(node->child[RIGHT]->data, node->data, avl->param) < 0;
+}
+
+static avl_node_t *Balance(avl_node_t *node, avl_t *avl)
+{
+    int balance_factor = 0;
+
+    assert(NULL != node);
+    assert(NULL != avl);
+
+    balance_factor = GetBalance(node);
+
+    if (LeftLeftImbalance(balance_factor, node, avl))
+    {
+        return Rotate(node, RIGHT);
+    }
+    else if (RightRightImbalance(balance_factor, node, avl))
+    {
+        return Rotate(node, LEFT);
+    }
+    else if (LeftRightImbalance(balance_factor, node, avl))
+    {
+        node->child[LEFT] = Rotate(node->child[LEFT], LEFT);
+        return Rotate(node, RIGHT);
+    }
+    else if (RightLeftImbalance(balance_factor, node, avl))
+    {
+        node->child[RIGHT] = Rotate(node->child[RIGHT], RIGHT);
+        return Rotate(node, LEFT);
+    }
+
+    UpdateHeight(node);
+    return node;
+
+}
+
 static int RecInsert(avl_t *avl, avl_node_t *node, avl_node_t *node_to_insert)
 {
-    enum child_direction direction = RIGHT;
+    child_direction_t direction = RIGHT;
     
     assert(NULL != avl);
     assert(NULL != node);
@@ -269,8 +374,7 @@ static int RecInsert(avl_t *avl, avl_node_t *node, avl_node_t *node_to_insert)
 
     RecInsert(avl, node->child[direction], node_to_insert);
 
-    node->height = UpdateHeight(node);
-    /*Balance(node);*/
+    Balance(node, avl);
 
     return 0;
 }
@@ -361,7 +465,7 @@ static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove,
                               avl_t *avl)
 {
     int cmp_func_result = 0;
-    enum child_direction direction = RIGHT;
+    child_direction_t direction = RIGHT;
     
     assert(NULL != avl);
     assert(NULL != node);
@@ -384,8 +488,7 @@ static avl_node_t *RemoveNode(avl_node_t *node, const void *data_to_remove,
                                         avl);
                                         
     node->height = UpdateHeight(node);
-    return node;
-    /*Balance(node);*/
+    return Balance(node, avl);
 }
 
 void AVLRemove(avl_t *avl, const void *data_to_remove)
