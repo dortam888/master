@@ -384,18 +384,15 @@ static avl_node_t *RecInsert(cmp_func_t cmp, void *param, avl_node_t *node,
     child_direction_t direction = RIGHT;
     int cmp_result = 0;
     
-    assert(NULL != node);
     assert(NULL != node_to_insert);
 
+    if (NULL == node)
+    {
+        return node_to_insert;
+    }
+    
     cmp_result = cmp(AVLGetData(node), AVLGetData(node_to_insert), param);
     direction =  GetAdvanceDirection(cmp_result);
-
-    if (NULL == AVLMoveToChild(node, direction))
-    {
-        node->child[direction] = node_to_insert;
-        UpdateHeight(node);
-        return node;
-    }
 
     node->child[direction] = RecInsert(cmp, param, 
                              AVLMoveToChild(node, direction), node_to_insert);
@@ -413,12 +410,6 @@ int AVLInsert(avl_t *avl, const void *data_to_insert)
     if (NULL == new_node)
     {
         return -1;
-    }
-    
-    if (AVLIsEmpty(avl))
-    {
-        avl->root.child[ROOT] = new_node;
-        return 0;
     }
 
     avl->root.child[ROOT] = RecInsert(avl->cmp_func, avl->param, 
