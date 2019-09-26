@@ -68,6 +68,8 @@ static void TestFlow1()
         printf("size was %lu\n", AVLCount(new_avl));
         FAIL("size didn't work");
     }
+    
+    printf("height is: %lu\n", AVLHeight(new_avl));
 
     AVLRemove(new_avl, arr_of_numbers);
     
@@ -78,7 +80,7 @@ static void TestFlow1()
         FAIL("size didn't work");
     }
     
-    AVLRemove(new_avl, &arr_of_numbers[2]);
+    AVLRemove(new_avl, &arr_of_numbers[6]);
     
     if (8 != AVLCount(new_avl))
     {
@@ -109,7 +111,7 @@ static void TestFlowForEachFind()
     int arr_of_numbers[] = {11, 42, 0, 50, 33, 12, 15, 29, 32, 9};
     int to_find = 50;
     int param_to_divide = 42;
-    int param_to_function = 1;
+    int param_to_function = 0;
     size_t i = 0LU;
     size_t error_counter = 0LU;
     avl_t *new_avl = AVLCreate(NULL, IntCmpFunc);
