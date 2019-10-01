@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "hash_table.h"
+
+#define PASS(str) printf("\033[0;32m%s\033[0m\n", str)
+#define FAIL(str) printf("\033[0;31m%s\033[0m in line %d\n", str, __LINE__)
+
+#define HASH_SIZE 100
+#define NUMBER_OF_WORDS_IN_DICTIONARY 99171
+#define MAX_WORD_SIZE 40
+#define DUMMY_INVALID_ADDRESS ((void *)0xDEADC0DE12DEAD)
+
+static size_t HashFunction(void *str)
+{
+    unsigned char *word = (unsigned char *)str;
+    size_t hash_key = 0;
+    
+    while ('\0' != *word)
+    {
+        hash_key += *word;
+        ++word;
+    }
+    
+    return hash_key % HASH_SIZE;
+}
+
+static int HashCmp(const void *key1, const void *key2)
+{
+    return strcmp((const char *)key1, (const char *)key2);
+}
+
+static void TestDictionary()
+{
+    char **dict = NULL;
+    size_t i = 0;
+    size_t buckets = HASH_SIZE;
+    char *data_to_find = "antiquate";
+    char *data_to_find2 = "environmentalism's";
+    char *data_to_find3 = "Ångström";
+    char *data_not_to_find = "blablabla";
+    size_t error_counter = 0;
+    
+    hash_table_t *new_hash = NULL;
+    FILE *dictionary = fopen("words.txt", "r");
+    if (NULL == dictionary)
+    {
+        printf("could not open file\n");
+        return;
+    }
+    
+    dict = (char **)malloc(NUMBER_OF_WORDS_IN_DICTIONARY * MAX_WORD_SIZE);
+    
+    for (i = 0; i < NUMBER_OF_WORDS_IN_DICTIONARY; ++i)
+    {
+        dict[i] = (char *)malloc(MAX_WORD_SIZE);
+    }
+
+    new_hash = HashTableCreate(buckets, HashFunction, HashCmp);
+    if (NULL == new_hash)
+    {
+        printf("couldn't create hash_table\n");
+        return;
+    }
+
+    for (i = 0; 0 == feof(dictionary); ++i)
+    {
+        fscanf(dictionary, "%s", dict[i]);
+    }
+    
+    fclose(dictionary);
+
+    if (!HashTableIsEmpty(new_hash))
+    {
+        ++error_counter;
+        FAIL("should be empty");
+    }
+    
+    for (i = 0; i < NUMBER_OF_WORDS_IN_DICTIONARY; ++i)
+    {
+        HashTableInsert(new_hash, dict[i]);
+    }
+    
+    if (strcmp((char *)HashTableFind(new_hash, data_to_find), data_to_find))
+    {
+        ++error_counter;
+        FAIL("Find didn't find");
+    }
+    
+    if (strcmp((char *)HashTableFind(new_hash, data_to_find2), data_to_find2))
+    {
+        ++error_counter;
+        FAIL("Find didn't find");
+    }
+    
+    if (strcmp((char *)HashTableFind(new_hash, data_to_find3), data_to_find3))
+    {
+        ++error_counter;
+        FAIL("Find didn't find");
+    }
+    
+    if (HashTableFind(new_hash, data_not_to_find) != DUMMY_INVALID_ADDRESS)
+    {
+        ++error_counter;
+        FAIL("Find should find");
+    }
+    
+    HashTableDestroy(new_hash);
+    
+    for (i = 0; i < NUMBER_OF_WORDS_IN_DICTIONARY; ++i)
+    {
+        free(dict[i]);
+    }
+    
+    free(dict);
+
+    if (0 == error_counter)
+    {
+        PASS("HashTable");
+    }
+}
+
+
+int main()
+{
+    TestDictionary();
+    return 0;
+}
