@@ -66,8 +66,8 @@ d_vector_t *DVectorCreate(size_t size_of_element, size_t capacity)
 {
 	size_t vector_memory_bytes = capacity * size_of_element;
 
-	register d_vector_t *d_vector = malloc(sizeof(d_vector_t));
-	if (NULL != d_vector)
+	d_vector_t *d_vector = malloc(sizeof(d_vector_t));
+	if (NULL == d_vector)
 	{
 		return NULL;
 	}
@@ -121,7 +121,8 @@ int DVectorPushBack(d_vector_t *d_vector, const void *data)
 {
 	int function_status = SUCCESS;
 
-	assert(NULL != d_vector && NULL != data);
+	assert(NULL != d_vector);
+	assert(NULL != data);
 
 	if (IsDVectorFull(d_vector))
 	{

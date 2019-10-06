@@ -298,3 +298,66 @@ int Radix(int *arr, size_t size, unsigned int num_of_bits)
 
     return 0;
 }
+
+typedef int(*cmp_func_t)(const void *, const void *);
+
+static void SwapByte(char *data1, char *data2)
+{
+    for (j = 0; j < element_size; ++j)
+    {
+        char tmp = *data1;
+        *data1 = *data2;
+        *data2 = tmp;
+        ++pivot;
+        ++(start_of_base);
+    }
+}
+
+static size_t ArrangeOnPivot(void *base, size_t element_size, size_t pivot_index, 
+                            cmp_func_t cmp_func)
+{
+    char *pivot = NULL;
+    size_t i = 0;
+
+    assert(NULL != base);
+    pivot = (char *)base + pivot_index * element_size;
+    
+    for (i = 0; i < pivot_index; ++i)
+    {
+        char *start_of_base = (char *)base;
+        if (cmp_func(start_of_base + i * element_size, pivot) > 0)
+        {
+            SwapByteByByte(start_of_base + i * element_size, 
+                           pivot, size_of_element);
+            
+            pivot = start_of_base + i * element_size;
+        }
+    }
+    
+    return (pivot - (char *)base) / element_size;
+}
+
+static void RecQSort(void *base, size_t element_size, size_t start_index, 
+                     size_t end_index, cmp_func_t cmp_func)
+{
+    size_t pivot_index = end_index;
+
+    assert(NULL != base);
+
+    if (start_index >= end_index)
+    {
+        return;
+    }
+    
+    pivot_index = ArrangeOnPivot(base, element_size, pivot_index, cmp_func);
+    RecQSort(base, element_size, start_index, pivot_index - 1, cmp_func);
+    RecQSort(base, element_size, pivot_index + 1, end_index, cmp_func);
+}
+
+void QSort(void *base, size_t num_of_elements, size_t element_size, 
+           cmp_func_t cmp_func)
+{ 
+    assert(NULL != base);
+
+    RecQSort(base, element_size, 0, num_of_elements - 1, cmp_func);
+}

@@ -12,10 +12,11 @@
 
 #include "avl.h" /* avl_t */
 
+#define NUMBER_OF_CHILDREN 2
 /*************************STRUCT AND ENUMS DEFINITIONS*************************/
 typedef struct avl_node
 {
-    struct avl_node *child[2];
+    struct avl_node *child[NUMBER_OF_CHILDREN];
     void *data;
     size_t height;
 } avl_node_t;
@@ -36,13 +37,28 @@ typedef enum child_direction
     LEFT
 } child_direction_t;
 
-enum {ROOT};
+static const child_direction_t ROOT = RIGHT; 
 
 typedef struct node_child_height
 {
     size_t right;
     size_t left;
 } node_child_height_t;
+
+enum imbalances_types
+{
+    LEFT_IMBALANCE = 2,
+    LEFT_RIGHT_IMBALANCE = -1,
+    BALANCE = 0,
+    RIGHT_LEFT_IMBALANCE = 1,
+    RIGHT_IMBALANCE = -2
+};
+
+enum function_status
+{
+    SUCCESS,
+    FAIL_TO_ALLOCATE_MEMORY
+};
 /******************************************************************************/
 
 /****************************FUNCTION DECLERATION******************************/
@@ -68,7 +84,7 @@ static child_direction_t SwitchDirection(child_direction_t direction)
 
 static child_direction_t GetAdvanceDirection(int cmp_result)
 {
-    return cmp_result < 0;
+    return (cmp_result < 0);
 }
 
 static avl_node_t *AVLGetRoot(const avl_t *avl)
@@ -88,9 +104,7 @@ static avl_node_t *AVLMoveToChild(const avl_node_t *node,
 
 static size_t AVLGetHeight(const avl_node_t *node)
 {
-    assert(NULL != node);
-
-    return node->height;
+    return (NULL == node)? 0 : node->height;
 }
 
 static void *AVLGetData(const avl_node_t *node)
@@ -106,7 +120,7 @@ avl_t *AVLCreate(void *param, int (*cmp_func)(const void *tree_data,
 								 			  const void *new_data,
 								 			  void *param))
 {
-    avl_t *new_avl = (avl_t *)malloc(sizeof(avl_t));
+    avl_t *new_avl = (avl_t *)malloc(sizeof(*new_avl));
     if (NULL == new_avl)
     {
         return NULL;
@@ -187,7 +201,7 @@ size_t AVLHeight(const avl_t *avl)
 /*****************************AVLHeight FUNCTION END***************************/
 
 /*****************************AVLFIND FUNCTION*********************************/
-static avl_node_t *RecFind(avl_node_t *node, cmp_func_t cmp, void *param, 
+static void *RecFind(avl_node_t *node, cmp_func_t cmp, void *param, 
                            const void *data_to_find)
 {
     int cmp_result = 0;
@@ -203,7 +217,7 @@ static avl_node_t *RecFind(avl_node_t *node, cmp_func_t cmp, void *param,
     
     if (0 == cmp_result)
     {
-        return node;
+        return AVLGetData(node);
     }
 
     return RecFind(AVLMoveToChild(node, direction), cmp, param, data_to_find);
@@ -211,32 +225,33 @@ static avl_node_t *RecFind(avl_node_t *node, cmp_func_t cmp, void *param,
 
 void *AVLFind(const avl_t *avl, const void *data_to_find)
 {
-    avl_node_t *node_with_data_to_find = NULL;
-
     assert(NULL != avl);
 
-    node_with_data_to_find = RecFind(AVLGetRoot(avl), 
-                                     avl->cmp_func, avl->param, data_to_find);
-    
-    return (NULL == node_with_data_to_find)? NULL : 
-                                             AVLGetData(node_with_data_to_find);
+    return RecFind(AVLGetRoot(avl), avl->cmp_func, avl->param, data_to_find);
 }
 /*****************************AVLFIND FUNCTION END*****************************/
 
 /*****************************AVLFOREACH FUNCTION******************************/
-static void RecForEach(avl_node_t *node, int (*action_func)(void *tree_data,
+static int RecForEach(avl_node_t *node, int (*action_func)(void *tree_data,
 					  void *param), void *param, int *action_func_status)
 {
-    if (NULL == node || 0 != *action_func_status)
+    if (NULL == node)
     {
-        return;
+        return *action_func_status;
     }
 
-    RecForEach(AVLMoveToChild(node, LEFT), action_func, param,
-               action_func_status);
-    *action_func_status += action_func(AVLGetData(node), param);
-    RecForEach(AVLMoveToChild(node, RIGHT), action_func, param,
-               action_func_status);
+    *action_func_status = RecForEach(AVLMoveToChild(node, LEFT), 
+                                     action_func, param, action_func_status);
+
+    if (0 == *action_func_status)
+    {
+        *action_func_status = action_func(AVLGetData(node), param);
+    }
+
+    *action_func_status = RecForEach(AVLMoveToChild(node, RIGHT), 
+                                     action_func, param, action_func_status);
+                                     
+    return *action_func_status;
 }
 
 int AVLForEach(void *param, avl_t *avl, int (*action_func)(void *tree_data,
@@ -270,8 +285,8 @@ static node_child_height_t GetChildHeight(const avl_node_t *node)
     child_left = AVLMoveToChild(node, LEFT);
     child_right = AVLMoveToChild(node, RIGHT);
 
-    child_height.left = (NULL == child_left)? 0 : AVLGetHeight(child_left);
-    child_height.right = (NULL == child_right)? 0 : AVLGetHeight(child_right);
+    child_height.left = AVLGetHeight(child_left);
+    child_height.right = AVLGetHeight(child_right);
 
     return child_height;
 }
@@ -305,16 +320,16 @@ typedef avl_node_t *(*rotate_t)(avl_node_t *node, child_direction_t direction);
 static avl_node_t *Rotate(avl_node_t *node, child_direction_t direction)
 {
     avl_node_t *pivot_node = NULL;
-    avl_node_t *other_node = NULL;
+    avl_node_t *third_node_in_rotation = NULL;
     child_direction_t opposite_direction = SwitchDirection(direction);
 
     assert(NULL != node);
 
     pivot_node = AVLMoveToChild(node, opposite_direction);
-    other_node = AVLMoveToChild(pivot_node, direction);
+    third_node_in_rotation = AVLMoveToChild(pivot_node, direction);
 
     pivot_node->child[direction] = node;
-    node->child[opposite_direction] = other_node;
+    node->child[opposite_direction] = third_node_in_rotation;
 
     UpdateHeight(node);
     UpdateHeight(pivot_node);
@@ -337,23 +352,25 @@ static avl_node_t *DoubleRotate(avl_node_t *node, child_direction_t direction)
 static avl_node_t *Balance(avl_node_t *node)
 {
     int balance_factor = 0;
-    rotate_t imbalance_lut[2] = {Rotate, DoubleRotate};
+    rotate_t imbalance_lut[] = {Rotate, DoubleRotate};
 
     assert(NULL != node);
 
     balance_factor = GetBalance(node);
 
-    if (balance_factor == 2) /*Left Imbalance*/
+    if (balance_factor == LEFT_IMBALANCE) /*Left Imbalance*/
     {
         int balance_factor_child = GetBalance(AVLMoveToChild(node, LEFT));
 
-        return imbalance_lut[balance_factor_child == -1](node, RIGHT);
+        return imbalance_lut[balance_factor_child == 
+                             LEFT_RIGHT_IMBALANCE](node, RIGHT);
     }
-    else if (balance_factor == -2) /*Right Imbalance*/
+    else if (balance_factor == RIGHT_IMBALANCE) /*Right Imbalance*/
     {
         int balance_factor_child = GetBalance(AVLMoveToChild(node, RIGHT));
 
-        return imbalance_lut[balance_factor_child == 1](node, LEFT);
+        return imbalance_lut[balance_factor_child == 
+                             RIGHT_LEFT_IMBALANCE](node, LEFT);
     }
 
     UpdateHeight(node);
@@ -364,7 +381,7 @@ static avl_node_t *Balance(avl_node_t *node)
 /************************AVLInsert FUNCTION************************************/
 static avl_node_t *AVLCreateNode(void *data)
 {
-    avl_node_t *new_node = (avl_node_t *)malloc(sizeof(avl_node_t));
+    avl_node_t *new_node = (avl_node_t *)malloc(sizeof(*new_node));
     if (NULL == new_node)
     {
         return NULL;
@@ -381,7 +398,7 @@ static avl_node_t *AVLCreateNode(void *data)
 static avl_node_t *RecInsert(cmp_func_t cmp, void *param, avl_node_t *node, 
                              avl_node_t *node_to_insert)
 {
-    child_direction_t direction = RIGHT;
+    child_direction_t direction = 0;
     int cmp_result = 0;
     
     assert(NULL != node_to_insert);
@@ -409,13 +426,13 @@ int AVLInsert(avl_t *avl, const void *data_to_insert)
     new_node = AVLCreateNode((void *)data_to_insert);
     if (NULL == new_node)
     {
-        return -1;
+        return FAIL_TO_ALLOCATE_MEMORY;
     }
 
     avl->root.child[ROOT] = RecInsert(avl->cmp_func, avl->param, 
                                       AVLGetRoot(avl), new_node);
 
-    return 0;
+    return SUCCESS;
 }
 /************************AVLInsert FUNCTION END********************************/
 
@@ -518,3 +535,23 @@ void AVLRemove(avl_t *avl, const void *data_to_remove)
 }
 /************************AVLRemove FUNCTION END********************************/
 
+/*
+void print2DUtil(node_t *node, size_t space)
+{
+  size_t i = 0;
+  if (node == NULL)
+      return;
+  space += 5;
+  print2DUtil(node->child[LEFT], space);
+  printf("\n");
+  for (i = 5; i < space; i++)
+  printf(" ");
+  printf("%d(%ld)\n", *(int *)node->data, node->height);
+  print2DUtil(node->child[RIGHT], space);
+}
+
+void print2D(avl_t *avl)
+{
+   print2DUtil(AVLGetRoot(avl), 0);
+}
+*/

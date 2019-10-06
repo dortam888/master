@@ -1,6 +1,6 @@
 /*******************************************************************************
 **** Author: Dor Tambour
-**** Last Update: שני ספטמבר 30 2019 02:48:52 pm
+**** Last Update:
 **** Reviewer:
 **** Description: This file contains the implementations of functions
                                   for the data structure hash_table.
@@ -29,7 +29,7 @@ static void CreateHashArray(hash_table_t *new_hash, size_t num_of_buckets)
     size_t i = 0;
     int is_alloc_succeed = 1;
     
-    new_hash->hash_array = malloc(num_of_buckets * sizeof(void *));
+    new_hash->hash_array = (void *)malloc(num_of_buckets * sizeof(void *));
     if (NULL == new_hash->hash_array)
     {
         return;
