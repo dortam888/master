@@ -299,65 +299,185 @@ int Radix(int *arr, size_t size, unsigned int num_of_bits)
     return 0;
 }
 
-typedef int(*cmp_func_t)(const void *, const void *);
-
-static void SwapByte(char *data1, char *data2)
+static size_t GetArrayLength(size_t start_index, size_t end_index)
 {
-    for (j = 0; j < element_size; ++j)
-    {
-        char tmp = *data1;
-        *data1 = *data2;
-        *data2 = tmp;
-        ++pivot;
-        ++(start_of_base);
-    }
+    return (end_index - start_index + 1);
 }
 
-static size_t ArrangeOnPivot(void *base, size_t element_size, size_t pivot_index, 
-                            cmp_func_t cmp_func)
+static void MergeArrays(int *arr, size_t subarray_left_start_index, 
+                        size_t subarray_left_end_index, 
+                        size_t subarray_right_end_index,
+			            int (*is_before)(int a, int b), int *memory_pool)
 {
-    char *pivot = NULL;
+	size_t i = 0, j = 0, k = 0; /*indexes*/
+	size_t subarray_left_length = GetArrayLength(subarray_left_start_index,
+	                                             subarray_left_end_index);
+	size_t subarray_right_start_index = subarray_left_end_index + 1;
+	size_t subarray_right_length =  GetArrayLength(subarray_right_start_index,
+	                                               subarray_right_end_index);
+
+	memcpy(memory_pool, (arr + subarray_left_start_index), 
+	       subarray_left_length * sizeof(int));
+	memcpy(memory_pool + subarray_left_length, 
+	      (arr + subarray_right_start_index), 
+	       subarray_right_length * sizeof(int));
+
+	for (i = subarray_left_start_index, j = 0, k = 0; 
+	    (j < subarray_left_length) && (k < subarray_right_length); 
+	     ++i)
+	{
+	    size_t memory_pool_offset_index = k + subarray_left_length;
+
+		if(is_before(memory_pool[j], memory_pool[memory_pool_offset_index]))
+		{ 
+			arr[i] = memory_pool[j];
+			++j; 
+		}
+		else
+		{ 
+			arr[i] = memory_pool[memory_pool_offset_index];
+			++k; 
+		} 
+	}
+
+	while (j < subarray_left_length) 
+	{ 
+		arr[i] = memory_pool[j];
+		++i;
+		++j; 
+	} 
+
+	while (k < subarray_right_length) 
+	{ 
+		arr[i] = memory_pool[k + subarray_left_length];
+		++i;
+		++k; 
+	}
+}
+
+static void RecMerge(int *arr, size_t start_index, size_t end_index, 
+                    int (*is_before)(int num1, int num2), int *memory_pool)
+{
+	size_t arr_split_index = 0;
+	
+	assert(NULL != arr);
+	assert(NULL != is_before);
+
+    arr_split_index = (start_index + end_index) >> 1;
+
+	if (start_index >= end_index) 
+	{
+        return;
+	}
+	
+	RecMerge(arr, start_index, arr_split_index, is_before, memory_pool);
+	RecMerge(arr, arr_split_index + 1, end_index, is_before, memory_pool);
+	
+	MergeArrays(arr, start_index, arr_split_index, end_index, 
+	            is_before, memory_pool);
+}
+
+int Merge(int *arr, size_t arr_length, int (*is_before)(int a, int b))
+{
+    int *memory_pool = NULL;
+    
+    assert(NULL != arr);
+    assert(NULL != is_before);
+    
+    memory_pool = (int *)malloc(arr_length * sizeof(int));
+    if (NULL == memory_pool)
+    {
+        return -1;
+    }
+
+	RecMerge(arr, 0, arr_length - 1, is_before, memory_pool);
+
+	free(memory_pool);
+
+	return 0;
+}
+
+typedef int(*cmp_func_t)(const void *data1, const void *data2);
+
+static void ByteSwap(char *byte1, char *byte2, size_t element_size)
+{
     size_t i = 0;
 
-    assert(NULL != base);
-    pivot = (char *)base + pivot_index * element_size;
-    
-    for (i = 0; i < pivot_index; ++i)
+    assert(NULL != byte1);
+    assert(NULL != byte2);
+
+    for (i = 0; i < element_size; ++i)
     {
-        char *start_of_base = (char *)base;
-        if (cmp_func(start_of_base + i * element_size, pivot) > 0)
-        {
-            SwapByteByByte(start_of_base + i * element_size, 
-                           pivot, size_of_element);
-            
-            pivot = start_of_base + i * element_size;
-        }
+        char tmp = *byte1;
+        *byte1 = *byte2;
+        *byte2 = tmp;
+        
+        ++byte1;
+        ++byte2;
     }
-    
-    return (pivot - (char *)base) / element_size;
+
+    return;
 }
 
-static void RecQSort(void *base, size_t element_size, size_t start_index, 
-                     size_t end_index, cmp_func_t cmp_func)
+static size_t Partition(void *base, size_t start_index, size_t end_index, 
+                        size_t element_size, cmp_func_t cmp_func)
 {
-    size_t pivot_index = end_index;
-
+    char *base_cast_char = (char *)base;
+    size_t pivot = 0;
+    
     assert(NULL != base);
+    assert(NULL != cmp_func);
+
+    pivot = end_index;
+
+    /* Put the pivot as start index. */
+    ByteSwap(&base_cast_char[pivot * element_size], 
+             &base_cast_char[start_index * element_size], element_size);
+    pivot = start_index;
+
+    while(start_index < end_index)
+    {
+        if(cmp_func(&base_cast_char[start_index * element_size], 
+                    &base_cast_char[end_index * element_size]) <= 0)
+        {
+            ByteSwap(&base_cast_char[pivot * element_size], 
+                     &base_cast_char[start_index * element_size], element_size);
+            ++pivot;
+        }
+
+        ++start_index;
+    }
+
+    ByteSwap(&base_cast_char[pivot * element_size], 
+             &base_cast_char[end_index * element_size], element_size);
+
+    return pivot;
+}
+
+static void RecQSort(void *base, size_t start_index, size_t end_index, 
+                     size_t element_size, cmp_func_t cmp_func)
+{
+    size_t pivot = 0;
+    
+    assert(NULL != base);
+    assert(NULL != cmp_func);
 
     if (start_index >= end_index)
     {
         return;
     }
     
-    pivot_index = ArrangeOnPivot(base, element_size, pivot_index, cmp_func);
-    RecQSort(base, element_size, start_index, pivot_index - 1, cmp_func);
-    RecQSort(base, element_size, pivot_index + 1, end_index, cmp_func);
+    pivot = Partition(base, start_index, end_index, element_size, cmp_func);
+    RecQSort(base, start_index, pivot - 1, element_size, cmp_func);
+    RecQSort(base, pivot + 1, end_index, element_size, cmp_func);
+
 }
 
 void QSort(void *base, size_t num_of_elements, size_t element_size, 
            cmp_func_t cmp_func)
-{ 
+{
     assert(NULL != base);
-
-    RecQSort(base, element_size, 0, num_of_elements - 1, cmp_func);
+    assert(NULL != cmp_func);
+    
+    RecQSort(base, 0, num_of_elements - 1, element_size, cmp_func);
 }
