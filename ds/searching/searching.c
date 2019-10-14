@@ -12,7 +12,10 @@
 
 #include "search.h"
 
-#define MIN(a,b) ((a) < (b)) ? ((a) : (b))
+static size_t MIN(size_t a, size_t b) 
+{
+    return ((a) < (b))? (a) : (b);
+}
 
 void *BSearchIterative(const void *key, const void *base, size_t n_items,
 					   size_t elm_size, int (*cmp)(const void *, const void *))
@@ -25,9 +28,14 @@ void *BSearchIterative(const void *key, const void *base, size_t n_items,
     assert(NULL != cmp);
     assert(NULL != key);
 
+    if (0 == cmp(key, &base_cast_char[end_index * elm_size]))
+    {
+        return &base_cast_char[end_index * elm_size];
+    }
+
     do
     {
-        size_t mid_index = start_index + (end_index - start_index) >> 1;
+        size_t mid_index = start_index + ((end_index - start_index) >> 1);
         size_t current_position = mid_index * elm_size;
         int compare_result = cmp(key, &base_cast_char[current_position]);
         
@@ -35,23 +43,23 @@ void *BSearchIterative(const void *key, const void *base, size_t n_items,
         {
             return &base_cast_char[current_position];
         }
-        else if (0 < compare)
+        else if (0 < compare_result)
         {
             start_index = mid_index + 1;
         }
         else
         {
-            end_index = mid_index - 1;
+            end_index = mid_index;
         }
         
-    } while (start_index < end_index)
+    } while (start_index < end_index);
     
     return NULL;
 }
 
-RecBSearch(const void *key, const void *base, size_t start_index, 
-           size_t end_index, size_t elm_size, 
-           int (*cmp)(const void *, const void *)
+void *RecBSearch(const void *key, const void *base, size_t start_index, 
+                 size_t end_index, size_t elm_size, 
+                 int (*cmp)(const void *, const void *))
 {
     size_t mid_index = 0;
     size_t current_position = 0;
@@ -62,12 +70,12 @@ RecBSearch(const void *key, const void *base, size_t start_index,
     assert(NULL != cmp);
     assert(NULL != key);
     
-    if (end_index < start_index)
+    if (end_index <= start_index)
     {
         return NULL;
     }
 
-    mid_index = start_index + (end_index - start_index) >> 1;
+    mid_index = start_index + ((end_index - start_index) >> 1);
     current_position = mid_index * elm_size;
     compare = cmp(key, &base_cast_char[current_position]);
     
@@ -81,7 +89,7 @@ RecBSearch(const void *key, const void *base, size_t start_index,
     }
     else
     {
-        return RecBSearch(key, base, start_index, mid_index - 1, elm_size, cmp);
+        return RecBSearch(key, base, start_index, mid_index, elm_size, cmp);
     }
     
     return NULL;
@@ -90,9 +98,16 @@ RecBSearch(const void *key, const void *base, size_t start_index,
 void *BSearchRecursive(const void *key, const void *base, size_t n_items,
 					   size_t elm_size, int (*cmp)(const void *, const void *))
 {
+    char *base_cast_char = (char *)base;
+
     assert(NULL != base);
     assert(NULL != cmp);
     assert(NULL != key);
+    
+    if (0 == cmp(key, &base_cast_char[(n_items - 1) * elm_size]))
+    {
+        return &base_cast_char[(n_items - 1) * elm_size];
+    }
     
     return RecBSearch(key, base, 0, n_items - 1, elm_size, cmp);
 }
@@ -113,7 +128,7 @@ static size_t BSearchSqrt(size_t num)
         
         while (start <= end)
         {
-            size_t mid = start + (end - start) >> 1;
+            size_t mid = start + ((end - start) >> 1);
             
             if (mid * mid == num)
             {
@@ -152,6 +167,11 @@ void *JSearch(const void *key, const void *base, size_t nitems, size_t elm_size,
     {
         prev_blk_size = blk_size;
         blk_size += step_size;
+        
+        if (prev_blk_size >= nitems)
+        {
+            return NULL;
+        }
     }
     
     while (0 < cmp(key, &base_cast_char[prev_blk_size * elm_size]))
@@ -160,7 +180,7 @@ void *JSearch(const void *key, const void *base, size_t nitems, size_t elm_size,
         
         if (prev_blk_size == MIN(blk_size, nitems - 1))
         {
-            return NULL:
+            break;
         }
     }
     
