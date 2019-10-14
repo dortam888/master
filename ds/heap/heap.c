@@ -78,34 +78,37 @@ static size_t GetParentIndex(size_t index)
     return (index > 0)? (index - 1) >> 1 : 0;
 }
 
-static size_t HeapUp(heap_t *heap, size_t index)
+static void HeapUp(heap_t *heap, size_t index)
 {
     void *current_data = NULL;
     void *parent_data = NULL;
     size_t parent_index = 0;
 
     assert(NULL != heap);
-    
+
+    if (GetParentIndex(index) == index)
+    {
+        return;
+    }
+
     parent_index = GetParentIndex(index);
     current_data = DVectorGetItemAddress(heap->vector, index);
     parent_data = DVectorGetItemAddress(heap->vector, parent_index);
-    
+
     if (heap->cmp_priority(current_data, parent_data, heap->param) > 0)
     {
         Swap(current_data, parent_data);
-        index = HeapUp(heap, parent_index);
+        HeapUp(heap, parent_index);
     }
     else
     {
-        return index;
+        HeapUp(heap, parent_index);
     }
-    
-    return index;
 }
 
 static void HeapDown(heap_t *heap, size_t index)
 {
-    size_t left_child_index = -(~(index >> 1));
+    size_t left_child_index = -(~(index << 1));
     size_t right_child_index = -(~left_child_index);
     size_t heap_size = HeapSize(heap);
     size_t index_of_largest = 0;
@@ -115,33 +118,35 @@ static void HeapDown(heap_t *heap, size_t index)
     void *right_child_data = NULL;
 
     assert(NULL != heap);
-    
+
     parent_data = DVectorGetItemAddress(heap->vector, index);
-    left_child_data = DVectorGetItemAddress(heap->vector, left_child_index);
-    right_child_data = DVectorGetItemAddress(heap->vector, right_child_index);
-    
-    if ((left_child_index < heap_size) && 
-        (heap->cmp_priority(parent_data, left_child_data, heap->param) < 0))
+    data_of_largest = parent_data;
+
+    if (left_child_index < heap_size)
     {
-        index_of_largest = left_child_index;
-        data_of_largest = left_child_data;
-    }
-    else
-    {
-        data_of_largest = parent_data;
+        left_child_data = DVectorGetItemAddress(heap->vector, left_child_index);
+        if (heap->cmp_priority(parent_data, left_child_data, heap->param) < 0)
+        {
+            index_of_largest = left_child_index;
+            data_of_largest = left_child_data;
+        }
     }
     
-    if ((right_child_index < heap_size) && 
-        (heap->cmp_priority(data_of_largest, 
-                            right_child_data, heap->param) < 0))
+    if (right_child_index < heap_size)
     {
-        index_of_largest = right_child_index;
-        data_of_largest = right_child_data;
+        right_child_data = DVectorGetItemAddress(heap->vector, 
+                                                 right_child_index);
+        if (heap->cmp_priority(data_of_largest, 
+                               right_child_data, heap->param) < 0)
+        {
+            index_of_largest = right_child_index;
+            data_of_largest = right_child_data;
+        }
     }
-    
+
     if (data_of_largest != parent_data)
     {
-        Swap(&data_of_largest, parent_data);
+        Swap(data_of_largest, parent_data);
         HeapDown(heap, index_of_largest);
     }
 }
@@ -152,11 +157,11 @@ void Heapify(heap_t *heap)
     
     assert(NULL != heap);
     
-    heap_up_index = HeapUp(heap, GetLastIndex(heap));
-    if (heap_up_index < GetLastIndex(heap) - 1 && heap_up_index > 0)
+    if (HeapSize(heap) > 2)
     {
-        HeapDown(heap, heap_up_index);
+        HeapDown(heap, 0);
     }
+    HeapUp(heap, GetLastIndex(heap));
 }
 
 int HeapPush(heap_t *heap, const void *data)
@@ -190,7 +195,10 @@ void HeapPop(heap_t *heap)
 
     DVectorPopBack(heap->vector);
 
-    Heapify(heap);
+    if (!HeapIsEmpty(heap))
+    {
+        Heapify(heap);
+    }
 }
 
 void *HeapPeek(const heap_t *heap)
@@ -214,7 +222,6 @@ int HeapIsEmpty(const heap_t *heap)
     return DVectorIsEmpty(heap->vector);
 }
 
-
 void *HeapRemove(heap_t *heap, int(*is_match)(const void *heap_data,
 			   	 const void *user_data), void *data)
 {
@@ -233,8 +240,9 @@ void *HeapRemove(heap_t *heap, int(*is_match)(const void *heap_data,
 
         if (is_match(heap_data, data))
         {
-            removed_data = heap_data;
+            removed_data = last_data;
             Swap(heap_data, last_data);
+            DVectorPopBack(heap->vector);
             Heapify(heap);
         }
     }

@@ -7,8 +7,7 @@
                                   Look at searching.h for more information about the 
                                   functions.
 *******************************************************************************/
-#include <stdlib.h>
-#include <assert.h>
+#include <assert.h> /*assert*/
 
 #include "search.h"
 
