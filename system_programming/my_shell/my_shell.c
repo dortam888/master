@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "my_shell.h"
@@ -18,60 +19,47 @@
 #define MAX_STR_LEN 200000
 
 
-static void Parser(char *command, char **parameter_list, char *string_input)
+static void Parser(char **parameter_list, char *string_input)
 {
     size_t i = 0;
-    char* token = strtok(str, " ");
+    char* token = strtok(string_input, " ");
 
     while (token != NULL) { 
-        sprintf("%s", parameter_list[i], token);
+        parameter_list[i] = token;
         ++i;
         token = strtok(NULL, " ");
     }
 }
 
-int Shell()
+void Shell()
 {
+    char string_input[MAX_STR_LEN] = {0};
+    
     while (1)
     {
-        char string_input[MAX_STR_LEN] = {0};
-        char *command = {0};
         char *parameter_list[MAX_STR_LEN] = {NULL};
         pid_t pid = 0;
-
+        char current_work_directory[MAX_STR_LEN] = {0};
+        
+        if (NULL != getcwd(current_work_directory, 
+                           sizeof(current_work_directory)))
+        {
+            printf("%s$ ", current_work_directory);
+        }
+        
         fgets(string_input, MAX_STR_LEN, stdin);
         
-        Parser(command, parameter_list, string_input);
+        Parser(parameter_list, string_input);
         
-        if ((pid = fork()) == -1)
+        if (-1 == (pid = fork()))
         {
-            
+            printf("couldn't create process");
         }
-        else
+        else if (0 == pid)
         {
-            execv(parameter_list[0], )
+            execvp(parameter_list[0], parameter_list);
         }
         wait(NULL);
     }
-
 }
 
-
-
-int main()
-{
-    pid_t pid;
-    char *const parmList[] = {"ls", "-l", NULL};
-
-    if ((pid = fork()) == -1)
-    {
-        printf("fork error");
-    }
-    else if (pid == 0) {
-        execvp("ls", parmList);
-        printf("Return not expected. Must be an execv error.n");
-    }
-    wait(NULL);
-
-    return 0;
-  }
