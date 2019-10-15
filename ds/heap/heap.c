@@ -1,7 +1,7 @@
 /*******************************************************************************
 **** Author: Dor Tambour
 **** Last Update:
-**** Reviewer:
+**** Reviewer: Hila
 **** Description: This file contains the implementations of functions
                                   for the data structure heap.
                                   Look at heap.h for more information about the 
@@ -95,15 +95,12 @@ static void HeapUp(heap_t *heap, size_t index)
     current_data = DVectorGetItemAddress(heap->vector, index);
     parent_data = DVectorGetItemAddress(heap->vector, parent_index);
 
-    if (heap->cmp_priority(current_data, parent_data, heap->param) > 0)
+    if (heap->cmp_priority(parent_data, current_data, heap->param) > 0)
     {
         Swap(current_data, parent_data);
-        HeapUp(heap, parent_index);
     }
-    else
-    {
-        HeapUp(heap, parent_index);
-    }
+    
+    HeapUp(heap, parent_index);
 }
 
 static void HeapDown(heap_t *heap, size_t index)
@@ -125,7 +122,7 @@ static void HeapDown(heap_t *heap, size_t index)
     if (left_child_index < heap_size)
     {
         left_child_data = DVectorGetItemAddress(heap->vector, left_child_index);
-        if (heap->cmp_priority(parent_data, left_child_data, heap->param) < 0)
+        if (heap->cmp_priority(left_child_data, parent_data, heap->param) < 0)
         {
             index_of_largest = left_child_index;
             data_of_largest = left_child_data;
@@ -136,8 +133,8 @@ static void HeapDown(heap_t *heap, size_t index)
     {
         right_child_data = DVectorGetItemAddress(heap->vector, 
                                                  right_child_index);
-        if (heap->cmp_priority(data_of_largest, 
-                               right_child_data, heap->param) < 0)
+        if (heap->cmp_priority(right_child_data, 
+                               data_of_largest, heap->param) < 0)
         {
             index_of_largest = right_child_index;
             data_of_largest = right_child_data;
@@ -153,8 +150,6 @@ static void HeapDown(heap_t *heap, size_t index)
 
 void Heapify(heap_t *heap)
 {
-    size_t heap_up_index = 0;
-    
     assert(NULL != heap);
     
     if (HeapSize(heap) > 2)

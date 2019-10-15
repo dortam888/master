@@ -162,6 +162,7 @@ void *JSearch(const void *key, const void *base, size_t nitems, size_t elm_size,
     
     step_size = BSearchSqrt(nitems);
     
+    /* search block step size */
     while (0 < cmp(key, &base_cast_char[MIN(blk_size, nitems - 1) * elm_size]))
     {
         prev_blk_size = blk_size;
@@ -173,6 +174,7 @@ void *JSearch(const void *key, const void *base, size_t nitems, size_t elm_size,
         }
     }
     
+    /*linear search*/
     while (0 < cmp(key, &base_cast_char[prev_blk_size * elm_size]))
     {
         ++prev_blk_size;
