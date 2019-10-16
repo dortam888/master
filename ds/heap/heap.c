@@ -22,38 +22,7 @@ struct heap
     void *param;
 };
 
-heap_t *HeapCreate(cmp_func_t cmp_priority, void *param)
-{
-    heap_t *new_heap = (heap_t *)malloc(sizeof(*new_heap));
-    if (NULL == new_heap)
-    {
-        return NULL;
-    }
-    
-    new_heap->vector = DVectorCreate(sizeof(void *), 1);
-    if (NULL == new_heap->vector)
-    {
-        free(new_heap); new_heap = NULL;
-        return NULL;
-    }
-    
-    new_heap->cmp_priority = cmp_priority;
-    new_heap->param = param;
-    
-    return new_heap;
-}
-
-void HeapDestroy(heap_t *heap)
-{
-    assert(NULL != heap);
-    
-    DVectorDestroy(heap->vector);
-    heap->param = NULL;
-    heap->cmp_priority = NULL;
-    
-    free(heap); heap = NULL; 
-}
-
+/**********************Static Help Functions***********************************/
 static void Swap(void *data1, void *data2)
 {
     size_t tmp = *(size_t *)data1;
@@ -78,7 +47,7 @@ static size_t GetParentIndex(size_t index)
     return (index > 0)? (index - 1) >> 1 : 0;
 }
 
-static void HeapUp(heap_t *heap, size_t index)
+static void SiftUp(heap_t *heap, size_t index)
 {
     void *current_data = NULL;
     void *parent_data = NULL;
@@ -100,10 +69,10 @@ static void HeapUp(heap_t *heap, size_t index)
         Swap(current_data, parent_data);
     }
     
-    HeapUp(heap, parent_index);
+    SiftUp(heap, parent_index);
 }
 
-static void HeapDown(heap_t *heap, size_t index)
+static void SiftDown(heap_t *heap, size_t index)
 {
     size_t left_child_index = -(~(index << 1));
     size_t right_child_index = -(~left_child_index);
@@ -144,19 +113,53 @@ static void HeapDown(heap_t *heap, size_t index)
     if (data_of_largest != parent_data)
     {
         Swap(data_of_largest, parent_data);
-        HeapDown(heap, index_of_largest);
+        SiftDown(heap, index_of_largest);
     }
 }
 
-void Heapify(heap_t *heap)
+static void Sift(heap_t *heap)
 {
     assert(NULL != heap);
     
     if (HeapSize(heap) > 2)
     {
-        HeapDown(heap, 0);
+        SiftDown(heap, 0);
     }
-    HeapUp(heap, GetLastIndex(heap));
+    
+    SiftUp(heap, GetLastIndex(heap));
+}
+
+/************************API Functions*****************************************/
+heap_t *HeapCreate(cmp_func_t cmp_priority, void *param)
+{
+    heap_t *new_heap = (heap_t *)malloc(sizeof(*new_heap));
+    if (NULL == new_heap)
+    {
+        return NULL;
+    }
+    
+    new_heap->vector = DVectorCreate(sizeof(void *), 1);
+    if (NULL == new_heap->vector)
+    {
+        free(new_heap); new_heap = NULL;
+        return NULL;
+    }
+    
+    new_heap->cmp_priority = cmp_priority;
+    new_heap->param = param;
+    
+    return new_heap;
+}
+
+void HeapDestroy(heap_t *heap)
+{
+    assert(NULL != heap);
+    
+    DVectorDestroy(heap->vector);
+    heap->param = NULL;
+    heap->cmp_priority = NULL;
+    
+    free(heap); heap = NULL; 
 }
 
 int HeapPush(heap_t *heap, const void *data)
@@ -171,7 +174,7 @@ int HeapPush(heap_t *heap, const void *data)
         return HEAP_ALLOC_FAIL;
     }
 
-    Heapify(heap);
+    Sift(heap);
 
     return HEAP_SUCCESS;
 }
@@ -192,7 +195,7 @@ void HeapPop(heap_t *heap)
 
     if (!HeapIsEmpty(heap))
     {
-        Heapify(heap);
+        Sift(heap);
     }
 }
 
@@ -238,9 +241,9 @@ void *HeapRemove(heap_t *heap, int(*is_match)(const void *heap_data,
             removed_data = last_data;
             Swap(heap_data, last_data);
             DVectorPopBack(heap->vector);
-            Heapify(heap);
+            Sift(heap);
         }
     }
-    
+
     return removed_data;
 }

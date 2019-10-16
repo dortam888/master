@@ -11,6 +11,11 @@
 
 #include <stddef.h> /* size_t */
 
+enum shell_status 
+    {SUCCESS,
+     EXIT,
+     COULD_NOT_CREATE_CHILD_PROCESS,
+     FAILED_TO_EXECUTE};
 
 /*############################################################################
   # Description:
@@ -20,6 +25,6 @@
   # Return Value:
 
 ############################################################################*/
-void Shell();
+enum shell_status Shell();
 
 #endif /* ILRD_MY_SHELL_H */

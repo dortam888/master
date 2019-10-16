@@ -169,7 +169,7 @@ int DVectorPopBack(d_vector_t *d_vector)
 
 	if (IsDVectorNeedShrink(d_vector))
 	{
-		function_status = DVectorResize(d_vector, DVectorCapacity(d_vector) / 													  SHRINK_FACTOR);
+		/*function_status = DVectorResize(d_vector, DVectorCapacity(d_vector) / 													  SHRINK_FACTOR);*/
 		if (function_status != SUCCESS)
 		{
 			return function_status;
