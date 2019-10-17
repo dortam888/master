@@ -1,94 +1,132 @@
-/*******************************************************************************
-**** Author: Dor Tambour
-**** Last Update: Wednesday October 16 2019 02:09:17 
-**** Reviewer:
-**** Description: This file contains the implementations of functions
-                                  for the data structure signals.
-                                  Look at signals.h for more information about the 
-                                  functions.
-*******************************************************************************/
 #define _POSIX_C_SOURCE 1
-#define NUMBER_OF_TIMES 10
 
-#include <stdio.h> /*printf*/
-#include <unistd.h> /*fork*/
-#include <signal.h> /*sigaction*/
-#include <sys/types.h>
-#include <time.h> /*sleep*/
-#include <stdlib.h> /*exit*/
-#include <string.h> /*memset*/
+#include <stdio.h> /* printf */
+#include <sys/types.h> /* pid_t */
+#include <unistd.h> /* fork, execvp sleep*/
+#include <signal.h> /* sigaction */
 
-#include "signals.h"
+#define UNUSED(x) ((void)(x))
 
-static sig_atomic_t sig_flag = 0;
+static const size_t NUM_OF_PINGPONGS = 10000;
 
-static void SignalHandler(int signum)
+typedef enum ping_pong_status 
 {
-    sig_flag = signum;
+    SUCCESS,
+    SIGEMPTYSET_FAILURE,
+    SIGACTION_FAILURE,
+    FORK_FAILURE
+}ping_pong_status_t;
+
+static void USRHandler(int signal)
+{
+    UNUSED(signal);
+    return;
 }
 
-static void Handle(pid_t pid, int signum)
+static ping_pong_status_t SigactionCreate(struct sigaction *sig_act)
 {
-    char *pingpong[2] = {"PONG", "PING"};
-    
-    printf("%s!\n", pingpong[signum % 2]);
-    sleep(2);
-    kill(pid, signum);
+	if (0 != sigemptyset(&sig_act->sa_mask))
+	{
+		return SIGEMPTYSET_FAILURE;
+	}
+
+    sig_act->sa_flags = 0;
+    sig_act->sa_handler = USRHandler;
+
+    return SUCCESS;
 }
 
-static void ParentProcess(pid_t pid)
+static ping_pong_status_t SetUSRSingalsHandler(struct sigaction *sa)
 {
-    size_t number_of_pingpongs = 0;
-    
-    for (number_of_pingpongs = 0; number_of_pingpongs < NUMBER_OF_TIMES; 
-         ++number_of_pingpongs)
+    if ((0 == sigaction(SIGUSR1, sa, NULL)) && 
+       ((0 == sigaction(SIGUSR2, sa, NULL))))
     {
-        Handle(pid, sig_flag);
-        pause();
+        return SUCCESS;
     }
+
+    return SIGACTION_FAILURE;
+}
+
+static void PrintPingPong(int signum)
+{
+    switch(signum)
+    {
+        case SIGUSR1:
+            printf("PING!\n");
+			break;
+		case SIGUSR2:
+		    printf("PONG!\n");
+			break;
+		default:
+		    printf("not USR signal\n");
+		    break;
+	}
+}
+
+static void ProcessAction(pid_t pid, int signum)
+{
+    PrintPingPong(signum);
+    sleep(1);
+    kill(pid, signum);
+    pause();
 }
 
 static void ChildProcess()
 {
+    pause();
+
     while (1)
     {
-        pid_t pid = getppid();
-        Handle(pid, sig_flag);
-        pause();
+        ProcessAction(getppid(), SIGUSR2);
     }
 }
 
-void PingPong()
+static void ParentProcess(pid_t child_pid)
 {
-    pid_t child_pid = 0;
+	size_t num_of_pings = 0;
+    
+    for (num_of_pings = 0; num_of_pings < NUM_OF_PINGPONGS; ++num_of_pings)
+    {
+        ProcessAction(child_pid, SIGUSR1);
+    }
+    
+    kill(child_pid, SIGABRT);
+}
+
+enum ping_pong_status PingPong(void)
+{
+    pid_t pid = 0;
     struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    
-    sa.sa_handler = SignalHandler;
-    
-    if (-1 == sigaction(SIGUSR1, &sa, NULL))
+
+    if (SUCCESS != SigactionCreate(&sa))
     {
-        perror("sigaction");
-        exit(1);
+        return SIGACTION_FAILURE;
     }
-    
-    if (-1 == sigaction(SIGUSR2, &sa, NULL))
+
+    if (SUCCESS != SetUSRSingalsHandler(&sa))
     {
-        perror("sigaction");
-        exit(1);
+        return SIGEMPTYSET_FAILURE;
     }
-    
-    if ((child_pid = fork()) < 0)
+
+    if (0 > (pid = fork()))
     {
-        perror("fork");
-        exit(1);
+        return FORK_FAILURE;
     }
-    else if (0 == child_pid)
+    else if (0 == pid)
     {
         ChildProcess();
     }
     else
-    {
-        ParentProcess(child_pid);
+    { 
+        ParentProcess(pid);
     }
+    
+    return SUCCESS;
+}
+
+int main(void)
+{
+    PingPong();
+
+    return 0;
 }

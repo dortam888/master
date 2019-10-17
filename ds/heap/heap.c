@@ -55,7 +55,7 @@ static void SiftUp(heap_t *heap, size_t index)
 
     assert(NULL != heap);
 
-    if (GetParentIndex(index) == index)
+    if (0 == index)
     {
         return;
     }
@@ -76,21 +76,21 @@ static void SiftDown(heap_t *heap, size_t index)
 {
     size_t left_child_index = -(~(index << 1));
     size_t right_child_index = -(~left_child_index);
-    size_t heap_size = HeapSize(heap);
+    size_t heap_size = 0;
     size_t index_of_largest = 0;
     void *data_of_largest = NULL;
     void *parent_data = NULL;
-    void *left_child_data = NULL;
-    void *right_child_data = NULL;
 
     assert(NULL != heap);
 
+    heap_size = HeapSize(heap);
     parent_data = DVectorGetItemAddress(heap->vector, index);
     data_of_largest = parent_data;
 
     if (left_child_index < heap_size)
     {
-        left_child_data = DVectorGetItemAddress(heap->vector, left_child_index);
+        void *left_child_data = DVectorGetItemAddress(heap->vector, 
+                                                      left_child_index);
         if (heap->cmp_priority(left_child_data, parent_data, heap->param) < 0)
         {
             index_of_largest = left_child_index;
@@ -100,8 +100,8 @@ static void SiftDown(heap_t *heap, size_t index)
     
     if (right_child_index < heap_size)
     {
-        right_child_data = DVectorGetItemAddress(heap->vector, 
-                                                 right_child_index);
+        void *right_child_data = DVectorGetItemAddress(heap->vector, 
+                                                       right_child_index);
         if (heap->cmp_priority(right_child_data, 
                                data_of_largest, heap->param) < 0)
         {

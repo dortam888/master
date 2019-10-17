@@ -302,6 +302,8 @@ static void TestQSort(void(*sort_function)(void *, size_t, size_t,
     int arr32[8] = {6,10,10,20,15,15,20,0};
     int arr41[8] = {1,0,1,3,INT_MAX,3,1,0};
     int arr42[8] = {1,0,1,3,INT_MAX,3,1,0};
+    int arr51[6] = {2, 1, 3, 6, 5, 4};
+    int arr52[6] = {2, 1, 3, 6, 5, 4};
     static size_t sort_index;
     /*size_t i = 0;*/
     char *sort_func[] = {"Quick Sort"};
@@ -364,6 +366,14 @@ static void TestQSort(void(*sort_function)(void *, size_t, size_t,
         ++error_counter;
     }
     
+    sort_function(arr51, 6, sizeof(int), CmpFunc);
+    qsort(arr52, 6, sizeof(int), CmpFunc);
+
+    if (!CmpArr(arr51, arr52, 6))
+    {
+        FAIL(sort_func[sort_index]);
+        ++error_counter;
+    }
 
     if (0 == error_counter)
     {
