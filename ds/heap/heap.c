@@ -47,6 +47,11 @@ static size_t GetParentIndex(size_t index)
     return (index > 0)? (index - 1) >> 1 : 0;
 }
 
+static void *GetDataFromVectorPosition(const void *vector_position)
+{
+    return (*(void **)vector_position);
+}
+
 static void SiftUp(heap_t *heap, size_t index)
 {
     void *current_data = NULL;
@@ -64,7 +69,8 @@ static void SiftUp(heap_t *heap, size_t index)
     current_data = DVectorGetItemAddress(heap->vector, index);
     parent_data = DVectorGetItemAddress(heap->vector, parent_index);
 
-    if (heap->cmp_priority(parent_data, current_data, heap->param) > 0)
+    if (heap->cmp_priority(*(void **)parent_data, *(void **)current_data, 
+        heap->param) > 0)
     {
         Swap(current_data, parent_data);
     }
@@ -78,41 +84,46 @@ static void SiftDown(heap_t *heap, size_t index)
     size_t right_child_index = -(~left_child_index);
     size_t heap_size = 0;
     size_t index_of_largest = 0;
-    void *data_of_largest = NULL;
-    void *parent_data = NULL;
+    void *position_of_largest_in_vector = NULL;
+    void *parent_vector_pos = NULL;
 
     assert(NULL != heap);
 
     heap_size = HeapSize(heap);
-    parent_data = DVectorGetItemAddress(heap->vector, index);
-    data_of_largest = parent_data;
+    parent_vector_pos = DVectorGetItemAddress(heap->vector, index);
+    position_of_largest_in_vector = parent_vector_pos;
 
     if (left_child_index < heap_size)
     {
-        void *left_child_data = DVectorGetItemAddress(heap->vector, 
-                                                      left_child_index);
-        if (heap->cmp_priority(left_child_data, parent_data, heap->param) < 0)
+        void *left_child_vector_pos = DVectorGetItemAddress(heap->vector, 
+                                      left_child_index);
+        if (heap->cmp_priority(GetDataFromVectorPosition(left_child_vector_pos), 
+                               GetDataFromVectorPosition(parent_vector_pos),
+                               heap->param) < 0)
         {
             index_of_largest = left_child_index;
-            data_of_largest = left_child_data;
+            position_of_largest_in_vector = left_child_vector_pos;
         }
     }
     
     if (right_child_index < heap_size)
     {
-        void *right_child_data = DVectorGetItemAddress(heap->vector, 
-                                                       right_child_index);
-        if (heap->cmp_priority(right_child_data, 
-                               data_of_largest, heap->param) < 0)
+        void *right_child_vector_pos = DVectorGetItemAddress(heap->vector, 
+                                       right_child_index);
+        if (heap->cmp_priority(GetDataFromVectorPosition
+                               (right_child_vector_pos), 
+                               GetDataFromVectorPosition
+                               (position_of_largest_in_vector), 
+                               heap->param) < 0)
         {
             index_of_largest = right_child_index;
-            data_of_largest = right_child_data;
+            position_of_largest_in_vector = right_child_vector_pos;
         }
     }
 
-    if (data_of_largest != parent_data)
+    if (position_of_largest_in_vector != parent_vector_pos)
     {
-        Swap(data_of_largest, parent_data);
+        Swap(position_of_largest_in_vector, parent_vector_pos);
         SiftDown(heap, index_of_largest);
     }
 }
@@ -164,11 +175,11 @@ void HeapDestroy(heap_t *heap)
 
 int HeapPush(heap_t *heap, const void *data)
 {
-    enum heap_status status = 0;
+    int status = 0;
 
     assert(NULL != heap);
 
-    status = DVectorPushBack(heap->vector, data);
+    status = DVectorPushBack(heap->vector, &data);
     if (0 != status)
     {
         return HEAP_ALLOC_FAIL;
@@ -186,7 +197,7 @@ void HeapPop(heap_t *heap)
 
     assert(NULL != heap);
 
-    top_data = HeapPeek(heap);
+    top_data = DVectorGetItemAddress(heap->vector, 0);
     last_data = DVectorGetItemAddress(heap->vector, GetLastIndex(heap));
     
     Swap(top_data, last_data);
@@ -203,7 +214,8 @@ void *HeapPeek(const heap_t *heap)
 {
     assert(NULL != heap);
     
-    return DVectorGetItemAddress(heap->vector, 0); /*0 is start index*/
+    return GetDataFromVectorPosition(DVectorGetItemAddress(heap->vector, 0)); 
+    /*0 start index*/
 }
 
 size_t HeapSize(const heap_t *heap)
@@ -225,21 +237,23 @@ void *HeapRemove(heap_t *heap, int(*is_match)(const void *heap_data,
 {
     size_t i = 0;
     void *removed_data = NULL;
-    void *last_data = NULL;
+    void *last_item_in_vector = NULL;
 
     assert(NULL != heap);
     assert(NULL != is_match);
 
-    last_data = DVectorGetItemAddress(heap->vector, GetLastIndex(heap));
+    last_item_in_vector = 
+    DVectorGetItemAddress(heap->vector, GetLastIndex(heap));
 
     for (i = 0; i < HeapSize(heap); ++i)
     {
-        void *heap_data = DVectorGetItemAddress(heap->vector, i);
+        void *heap_pos_in_vector = DVectorGetItemAddress(heap->vector, i);
+        void *heap_data = GetDataFromVectorPosition(heap_pos_in_vector);
 
         if (is_match(heap_data, data))
         {
-            removed_data = last_data;
-            Swap(heap_data, last_data);
+            removed_data = heap_data;
+            Swap(heap_pos_in_vector, last_item_in_vector);
             DVectorPopBack(heap->vector);
             Sift(heap);
         }

@@ -1,22 +1,81 @@
-/*############################################################################*/
-/* Owner: OL72 */
-/* Reviewer: OL72 */
-/* Create: שני אוקטובר 14 2019 09:51:34 am */
-/* This file contains functions for dhcp data structure operations.*/
-/* Can be used for dhcp based algorithms */
-/*############################################################################*/
-
+/*********************************
+ * Title       : Heap            *
+ * Group       : OL712           *
+ * Version     : 1.4             *
+ * Last update : 10.10.2019      *
+ ********************************/
+ 
 #ifndef ILRD_DHCP_H
 #define ILRD_DHCP_H
+
+#define BYTES_IN_IP sizeof(int)
+
 #include <stddef.h> /* size_t */
 
+typedef enum
+{
+	SUCCESS,
+	FAIL,
+	INVALID_REQUEST
+} dhcp_status_t;
 
-/*############################################################################
-  # Description:
+typedef struct dhcp dhcp_t;
 
-  # Parameters:
+/*
+ * Create a new DHCP server 
+ * Param @net_id : network id
+ * Param @num_bits_net_id : num of bits that represent network id, byte alligned
+ * Return: pointer to new DHCP server
+ * Errors: if memory allocation failed, returns NULL 
+ */
 
-  # Return Value:
+dhcp_t *DHCPCreate(const unsigned char net_id[],
+				   size_t num_bits_net_id);
 
-############################################################################*/
+/*
+ * Destroy given DHCP server 
+ * Param @dhcp : pointer to dhcp
+ * Return: none
+ * Errors: none
+ */
+
+void DHCPDestroy(dhcp_t *dhcp);
+
+/*
+ * allocate ip address. 
+ * User can request to allocate a specific ip address, if the address is 
+ * already leased, the user will receive the next available address
+ * Param @dhcp : pointer to DHCP server 
+ * Param @req_ip : requested ip address
+ * Param @alloc_ip : return ip address
+ * Return: dhcp_status_t: return lease status
+ * Errors: if allocation success and requested ip is legal (net id must be same)
+ * return SUCCESS, if requested ip is illegal - return INVALID_REQUEST,
+ * if allocation fails return FAIL.
+ */
+
+dhcp_status_t DHCPLease(dhcp_t *dhcp, const unsigned char req_ip[],
+						unsigned char alloc_ip[]);
+
+/*
+ * Release previously allocated ip address
+ * Param @ip_to_release: ip address to be released
+ * Return: dhcp_status_t:  return release status
+ * Errors: if the address is a legal address to free return SUCCESS 
+ * else return INVALID_REQUEST
+ */
+
+dhcp_status_t DHCPRelease(dhcp_t *dhcp, 
+						  const unsigned char ip_to_release[]);
+
+/*
+ * Gets number of available addresses to lease.
+ * Param @dhcp: pointer to dhcp
+ * Return: number of available ip addresses
+ * Errors: none 
+ */
+
+size_t DHCPCountFree(const dhcp_t *dhcp);
+
 #endif /* ILRD_DHCP_H */
+
