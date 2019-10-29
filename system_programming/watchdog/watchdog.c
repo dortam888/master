@@ -34,13 +34,85 @@ typedef enum watchdog_status
     MEMORY_ALLOCATION_FAILURE
 } watchdog_status_t;
 
-static struct sembuf post_plus = {0, 1, SEM_UNDO};
+typedef struct task_parameters
+{
+    pid_t pid;
+    char *argv[];
+    scheduler_t scheduler;
+} parameters_t;
+
+static struct sembuf post_plus = {0, 2, SEM_UNDO};
 static struct sembuf post_minus = {0, -1, SEM_UNDO};
 static struct sembuf wait = {0, 0, SEM_UNDO};
 
+volatile sig_atomic_t flag = 0;
+
 static void WatchMeDawg(int signal)
 {
-    /* TODO */
+    flag = 1;
+}
+
+static int CheckFlag(void *task_parameters)
+{
+    parameters_t param = *(parameters_t *)task_parameters;
+
+    if (flag)
+    {
+        flag = 0;
+        kill(param.pid, SIGUSR1);
+    }
+    else
+    {
+        if (0 > (pid = fork()))
+        {
+            perror("fork");
+            exit(1);
+        }
+        else if (0 == pid)
+        {
+            execvp("wd.out", param.argv);
+        }
+    }
+    
+    return SUCCESS;
+}
+
+static int WDCheckFlag(void *task_parameters)
+{
+    parameters_t param = *(parameters_t *)task_parameters;
+
+    if (flag)
+    {
+        flag = 0;
+        kill(param.pid, SIGUSR1);
+    }
+    else
+    {
+        if (0 > (pid = fork()))
+        {
+            perror("fork");
+            exit(1);
+        }
+        else if (0 != pid)
+        {
+            execvp("wd.out", param.argv);
+        }
+    }
+    
+    return SUCCESS;
+}
+
+static int DNRTask(void *task_parameters)
+{
+    parameters_t param = *(parameters_t *)task_parameters;
+
+    if (!dnr_flag)
+    {
+        kill(param.pid, SIGUSR2);
+        semop(param.sem_id, &post_minus, 1);
+        
+        SchedStop(param.scheduler);
+    }
 }
 
 static void *RunSchedThread(void *scheduler)
@@ -48,6 +120,11 @@ static void *RunSchedThread(void *scheduler)
     scheduler_t *sched = (scheduler_t *)scheduler;
 
     if (semop(sem_id, &post_minus, 1) < 0)
+    {
+        perror("semop");
+    }
+    
+    if (semop(sem_id, &wait, 1) < 0)
     {
         perror("semop");
     }
@@ -81,18 +158,26 @@ static watchdog_status_t SetUSRSingalsHandler(struct sigaction *sa)
     return SIGACTION_FAILURE;
 }
 
+int WDProcess(char *argv[], time_t interval)
+{
+    execvp("wd.out", argv);
+}
+
 int WDMakeMeImmortal(char *argv[], time_t interval)
 {
     pid_t pid = 0;
     struct sigaction sa;
+    parameters_t task_parameters;
     scheduler_t *new_scheduler = NULL;
     int sem_id = 0;
 
-    if (semget(SEM_KEY, 1, 0666 | IPC_CREAT) < 0)
+    if (0 > (sem_id = semget(SEM_KEY, 1, 0666 | IPC_CREAT)))
     {
         perror("semget");
         return SEMAPHORE_FAILURE;
     }
+
+    task_parameters.argv = argv;
 
     if (0 > (pid = fork()))
     {
@@ -101,10 +186,12 @@ int WDMakeMeImmortal(char *argv[], time_t interval)
     }
     else if (0 == pid)
     {
-        ChildProcess();
+        WDProcess(task_parameters, interval);
     }
     else
     {
+        task_parameters.pid = pid; /* init child pid */
+
         if (SUCCESS != SigactionCreate(&sa))
         {
             perror("sigaction");
@@ -118,15 +205,36 @@ int WDMakeMeImmortal(char *argv[], time_t interval)
             return MEMORY_ALLOCATION_FAILURE;
         }
 
+        task_parameters.scheduler = new_scheduler;
+
         if (UIDIsSame(BAD_UID, 
-        SchedAddTask(new_scheduler, CheckFlag, NULL, interval, time(NULL))))
+        SchedAddTask(new_scheduler, CheckFlag, &pid, interval, time(NULL))))
         {
             perror("task error");
+            SchedDestroy(new_scheduler);
+            return MEMORY_ALLOCATION_FAILURE;
+        }
+
+        if (UIDIsSame(BAD_UID, 
+        SchedAddTask(new_scheduler, CheckFlag, &task_parameters, interval, 
+                     time(NULL))))
+        {
+            perror("task error");
+            SchedDestroy(new_scheduler);
             return MEMORY_ALLOCATION_FAILURE;
         }
         
+        if (UIDIsSame(BAD_UID, 
+        SchedAddTask(new_scheduler, DNRTask, &task_parameters, interval, 
+                     time(NULL))))
+        {
+            perror("task error");
+            SchedDestroy(new_scheduler);
+            return MEMORY_ALLOCATION_FAILURE;
+        }
+
         pthread_create();
-        if (semop(sem_id, &post_plus, 1) < 0)
+        if (semop(sem_id, &post_minus, 1) < 0)
         {
             perror("semop");
             return SEMAPHORE_FAILURE;
@@ -141,5 +249,3 @@ int WDMakeMeImmortal(char *argv[], time_t interval)
 
     return SUCCESS;
 }
-
-
