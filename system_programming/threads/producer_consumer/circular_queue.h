@@ -55,7 +55,7 @@ int CQueueEnqueue(c_queue_t *c_queue, void *data);
 	number of bytes that were written to the circular queueer
 	returns -1 in case of failure
 ##############################################################################*/
-void *CQueueDequeue(c_queue_t *c_queue, void *data);
+void *CQueueDequeue(c_queue_t *c_queue);
 
 /*#############################################################################
   # Description: 
