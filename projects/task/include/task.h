@@ -1,12 +1,12 @@
 /*############################################################################*/
-/* Owner: OL72 */
-/* Reviewer: OL72 */
+/* Owner: Dor Tambour */
+/* Reviewer: Dor Tambour */
 /* Create: Sunday August 25 2019 02:38 PM */
 /* This file contains functions for tasks .*/
 /*############################################################################*/
 
-#ifndef ILRD_TASK_H
-#define ILRD_TASK_H
+#ifndef TASK_H
+#define TASK_H
 #include <stddef.h> /* size_t */
 #include <sys/types.h> /* size_t, time_t, pid_t */
 
@@ -75,7 +75,7 @@ int TaskExecute(task_t *task);
   # Return Value:
 	uid of the task
 ##############################################################################*/
-ilrd_uid_t TaskGetUID(const task_t *task);
+uid_t TaskGetUID(const task_t *task);
 
 /*#############################################################################
   # Description: 
@@ -87,5 +87,5 @@ ilrd_uid_t TaskGetUID(const task_t *task);
 ##############################################################################*/
 void TaskUpdateTimeToExecute(task_t *task);
 
-#endif /* ILRD_TASK_H */
+#endif /* TASK_H */
 

@@ -1,13 +1,13 @@
 /*############################################################################*/
-/* Owner: OL72 */
-/* Reviewer: OL72 */
+/* Owner: Dor Tambour */
+/* Reviewer: Dor Tambour */
 /* Create: Thursday August 22 2019 04:09:20 PM */
 /* This file contains functions for UID data structure operations.*/
 /* Can be used for UID based algorithms */
 /*############################################################################*/
 
-#ifndef ILRD_UID_H
-#define ILRD_UID_H
+#ifndef UID_H
+#define UID_H
 #include <sys/types.h> /* size_t, time_t, pid_t */
 
 typedef struct uid
@@ -15,9 +15,9 @@ typedef struct uid
 	size_t counter;
 	time_t time;
 	pid_t pid;
-} ilrd_uid_t;
+} uid_t;
 
-extern const ilrd_uid_t BAD_UID;
+extern const uid_t BAD_UID;
 
 /*############################################################################
   # Description: 
@@ -27,7 +27,7 @@ extern const ilrd_uid_t BAD_UID;
   # Return Value:
 	Struct with unique id
 ############################################################################*/
-ilrd_uid_t UIDCreate(void);
+uid_t UIDCreate(void);
 
 /*############################################################################
   # Description:
@@ -39,6 +39,6 @@ ilrd_uid_t UIDCreate(void);
 	1 if ids are the same, 0 otherwise
 
 ############################################################################*/
-int UIDIsSame(ilrd_uid_t uid1, ilrd_uid_t uid2);
+int UIDIsSame(uid_t uid1, uid_t uid2);
 
-#endif /* ILRD_UID_H */
+#endif /* UID_H */

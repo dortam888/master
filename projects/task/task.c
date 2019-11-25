@@ -1,7 +1,6 @@
 /*******************************************************************************
 **** Author: Dor Tambour
 **** Last Update: 28/08/2019
-**** Reviewer: Nitzan
 **** Description: This file contains implementations of functions
 				  for tasks
 *******************************************************************************/
@@ -13,7 +12,7 @@
 
 struct task
 {
-	ilrd_uid_t uid;
+	uid_t uid;
 	action_func_t action_func;
 	void *params;
 	time_t time_to_execute;
@@ -74,7 +73,7 @@ int TaskExecute(task_t *task)
 	return task->action_func(task->params);
 }
 
-ilrd_uid_t TaskGetUID(const task_t *task)
+uid_t TaskGetUID(const task_t *task)
 {
 	assert(NULL != task);
 

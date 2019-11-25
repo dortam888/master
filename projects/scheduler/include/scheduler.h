@@ -1,15 +1,15 @@
 /*############################################################################*/
-/* Owner: OL72 */
-/* Reviewer: OL72 */
+/* Owner: Dor Tambour */
+/* Reviewer: Dor Tambour */
 /* Create: Sunday August 25 2019 */
 /* This file contains functions for scheduler operations.*/
 /*############################################################################*/
 
-#ifndef ILRD_SCHEDULER_H
-#define ILRD_SCHEDULER_H
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
 #include <stddef.h> /* size_t */
-#include <UID.h> /*ilrd_uid_t*/
+#include <UID.h> /*uid_t*/
 
 typedef struct scheduler scheduler_t;
 
@@ -47,8 +47,9 @@ void SchedDestroy(scheduler_t *sched);
 ##############################################################################*/
 typedef int (*task_action_func_t)(void *params);
 
-ilrd_uid_t SchedAddTask(scheduler_t *sched, task_action_func_t action_func, void *params,
-                        time_t exe_interval_in_seconds, time_t execution_start_time);
+uid_t SchedAddTask(scheduler_t *sched, task_action_func_t action_func, 
+                   void *params,
+                   time_t exe_interval_in_seconds, time_t execution_start_time);
 
 /*#############################################################################
   # Description: 
@@ -59,7 +60,7 @@ ilrd_uid_t SchedAddTask(scheduler_t *sched, task_action_func_t action_func, void
   # Return Value:
 	None
 ##############################################################################*/
-void SchedRemoveTask(scheduler_t *sched, ilrd_uid_t task_uid);
+void SchedRemoveTask(scheduler_t *sched, uid_t task_uid);
 
 /*#############################################################################
   # Description: 
@@ -111,4 +112,4 @@ void SchedStop(scheduler_t *sched);
 
 
 
-#endif /* ILRD_SCHEDULER_H */
+#endif /* SCHEDULER_H */

@@ -1,7 +1,6 @@
 /*******************************************************************************
 **** Author: Dor Tambour
 **** Last Update: 28/08/2019
-**** Reviewer: Nitzan
 **** Description: This file contains implementations of functions
 				  for the scheduler.
 				  The scheduler is a tool for handling tasks and run them on 
@@ -78,7 +77,7 @@ void SchedDestroy(scheduler_t *sched)
 	free(sched); sched = NULL;
 }
 
-ilrd_uid_t SchedAddTask(scheduler_t *sched, action_func_t action_func, 
+uid_t SchedAddTask(scheduler_t *sched, action_func_t action_func, 
 						void *params, time_t exe_interval_in_seconds, 
 						time_t execution_start_time)
 {
@@ -108,7 +107,7 @@ static int IsTaskUidSame(const void *data1, const void *data2)
 	return (UIDIsSame(TaskGetUID(task1), *uid2));
 }
 
-void SchedRemoveTask(scheduler_t *sched, ilrd_uid_t task_uid)
+void SchedRemoveTask(scheduler_t *sched, uid_t task_uid)
 {
 	assert(NULL != sched);
 
