@@ -253,11 +253,11 @@ static void TestRemoveMyself()
 
 int main()
 {
-	/*RegularFunctionalities();
+	RegularFunctionalities();
 	StopBeforeEnd();
-	ClearAllTask();*/
+	ClearAllTask();
 	TestRemoveMyself();
-	/*TestAddTwoTasks();*/
+	TestAddTwoTasks();
 
     return 0;
 }
